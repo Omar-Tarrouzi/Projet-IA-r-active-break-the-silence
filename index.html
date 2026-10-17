@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASCENT — Break the Silence</title>
+  <meta name="description" content="A vertical shmup built on Craig Reynolds' steering behaviours with living textToPoints swarms and real-time clap noise detection." />
+  <link rel="stylesheet" href="style.css" />
+  <!-- p5.js library -->
+  <script src="libraries/p5.min.js"></script>
+</head>
+<body>
+  <main class="cabinet">
+    <aside class="rail left-rail">
+      <a class="wordmark" href="./index.html">A<span>ϟ</span>CENT<span class="edition">SONIC SURVIVAL / VOL. 01</span></a>
+      <div class="chapter"><span class="eyebrow">NOW ASCENDING</span><h2 id="band">BASEMENT</h2><p>Make yourself heard.</p></div>
+      <div class="altitude"><span class="eyebrow">ALTITUDE</span><strong id="altitude">0000</strong><span class="unit">METRES / 4000</span><div class="track"><i id="altitude-fill"></i></div><span id="milestone" class="milestone">1000 M — THE CONDUCTOR</span></div>
+      <div class="score-panel"><span class="eyebrow">YOUR SCORE</span><strong id="score">000000</strong><div class="split"><span>DISSONANCE</span><b id="risk">×1.0</b></div><div id="clean-streak" class="clean-streak">CLEAN BREAKS 0/3 · OVERTURE</div></div>
+      <div class="health"><div class="split"><span class="eyebrow">SIX STRINGS / LIFE</span><b id="tune">100</b></div><div id="strings" class="strings"><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="small">Keep the last string singing.</span></div>
+      <div class="rail-footer"><span class="live-dot"></span> REACTIVE BY NATURE<br><span class="small">CRAIG REYNOLDS / STEERING STUDIES</span></div>
+    </aside>
+    <section class="arena" aria-label="Game arena">
+      <div class="arena-top"><span>ASCENT / LIVE SESSION</span><span id="session-status">READY TO RESONATE</span></div>
+      <div id="canvas-container"></div>
+      <div id="boss-hud" hidden><div class="split"><span id="boss-name">VESPER</span><b id="boss-count">240 / 240</b></div><div class="boss-track"><i id="boss-fill"></i></div><div class="split"><span id="boss-phase">CONDUCTOR OF THE HOLLOW</span><span id="boss-counter">HIGH · PIERCE</span></div></div>
+      <div id="combat-guide" class="combat-guide" hidden aria-live="polite"><span id="guide-kicker">READ THE FORM</span><strong id="guide-action">MOVE · CHARGE · RELEASE</strong><small id="guide-detail">Watch the wind-up, then break the shape.</small><i id="guide-meter"></i></div>
+      <div id="mobile-bar" class="mobile-bar" hidden><span><b id="mobile-life">100</b> LIFE</span><span><b id="mobile-volume">100</b> VOL</span><button type="button" data-tuning="LOW" aria-label="Low tuning">LOW</button><button type="button" data-tuning="MID" aria-label="Mid tuning">MID</button><button type="button" data-tuning="HIGH" aria-label="High tuning">HIGH</button><button type="button" id="mobile-dash">DASH</button><button type="button" id="mobile-mic">MIC</button></div>
+      <div id="boss-intro" class="boss-intro" hidden aria-live="off"><span class="boss-intro-lines" aria-hidden="true"></span><span id="boss-intro-sigil" class="boss-intro-sigil" aria-hidden="true">♛</span>
+        <span id="boss-intro-kicker">AT 1000 METRES · THE SILENCE TAKES ITS THRONE</span>
+        <strong id="boss-intro-name">VESPER</strong>
+        <small id="boss-intro-domain">SOVEREIGN OF SILENCE</small>
+      </div>
+      <div id="popups" aria-live="off"></div><div id="demo-panel" class="demo-panel" hidden aria-live="polite"><div class="demo-header"><span>◈ ANALYSE MACHINE / DÉMO AUTONOME</span><button id="demo-exit" type="button">QUITTER ×</button></div><div class="demo-body"><div class="demo-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><small id="demo-tag">SIGNAL ENTRANT</small><strong id="demo-title">INITIALISATION</strong><p id="demo-copy">La guitare va jouer toute seule.</p><code id="demo-formula">STEERING ACTIF</code></div></div><button id="demo-sound" type="button" hidden>ACTIVER LE SON ↗</button></div><button id="skip-opening" hidden>SKIP ORIGIN ↗</button>
+      <div id="screen" class="screen">
+        <div class="screen-content"><span id="screen-kicker" class="eyebrow">A GUITAR AGAINST THE SILENCE</span>
+        <div class="hero-stage" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><img id="hero-guitar" alt=""><span class="hero-tag">THE LAST INSTRUMENT</span></div><h1 id="screen-title">ASCENT</h1>
+        <p id="screen-copy">A forbidden song opened the sky. Four rulers took its player. His guitar followed.</p>
+        <button id="play" class="primary">BEGIN ASCENT <span>↗</span></button><button id="demo" class="secondary demo-start">REGARDER LA DÉMO AUTONOME <span>▶</span></button>
+        <details class="practice-menu"><summary>PRACTICE A RULER · SPOILERS</summary><label class="boss-chooser">CHOOSE A RULER <select id="boss-select"><option value="HUSH">VESPER · 1000 M</option><option value="MUTE">HARM ONYX · 2000 M</option><option value="ECHO">NOVA · 3000 M</option><option value="MEASURE">CADENCE · 4000 M</option></select></label>
+        <button id="duel" class="secondary">CHALLENGE RULER <span>↗</span></button><button id="demo-boss" class="secondary">DÉMO AUTO : CE SOUVERAIN <span>▶</span></button></details>
+        <details class="sound-tutorial"><summary>COMMENT COMMANDER LA GUITARE PAR LE SON ?</summary><div class="sound-tutorial-grid"><div><span class="tutorial-glyph tutorial-clap" aria-hidden="true">◉</span><b>CLAQUEMENT</b><small>Bref → attaque MID en cône</small></div><div><span class="tutorial-glyph tutorial-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>SON TENU</b><small>Chanter ou faire du bruit → charge HIGH</small></div><div><span class="tutorial-glyph tutorial-pointer" aria-hidden="true">↗</span><b>SANS MICRO</b><small>Déplacer, maintenir, relâcher</small></div></div><p>Micro facultatif · activer à droite. La démo simule les mêmes actions sans écouter votre micro.</p></details><p class="screen-hint"><span class="desktop-hint">MOVE THE MOUSE · HOLD CLICK · RELEASE TO SHATTER</span><span class="touch-hint">DRAG TO MOVE · HOLD THE ARENA · RELEASE TO BLAST</span></p></div>
+      </div>
+      <div class="arena-bottom"><span id="combo">BREAK THE SILENCE</span><span>◆ <span id="harmony">1</span> HARMONY</span></div>
+    </section>
+    <aside class="rail right-rail">
+      <div class="record"><span class="record-core">ϟ</span></div><div class="equalizer" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i><i style="--i:12"></i><i style="--i:13"></i><i style="--i:14"></i><i style="--i:15"></i></div>
+      <span class="eyebrow">FIND THEIR FREQUENCY</span><h2>RESONANCE</h2>
+      <div class="tunings">
+        <button data-tuning="LOW" class="tuning active"><span class="tuning-icon">◯</span><span><b>LOW</b><small>DISPERSE / 360°</small></span><kbd>1</kbd></button>
+        <button data-tuning="MID" class="tuning"><span class="tuning-icon">◭</span><span><b>MID</b><small>CLEAVE / CONE</small></span><kbd>2</kbd></button>
+        <button data-tuning="HIGH" class="tuning"><span class="tuning-icon">⋮</span><span><b>HIGH</b><small>PIERCE / BEAM</small></span><kbd>3</kbd></button>
+      </div>
+      <div class="energy"><div class="split"><span class="eyebrow">AMPLIFIER</span><span id="volume">100%</span></div><div class="vu"><i id="volume-fill"></i></div><div class="split small"><span>VOLUME</span><span id="dash">DASH READY</span></div></div>
+      <div class="controls"><div><kbd>SPACE</kbd><span>Sonic dash</span></div><div><kbd>P</kbd><span>Pause session</span></div><div><kbd>X</kbd><span>Steering X-ray</span></div><div><kbd>R</kbd><span>Restart run</span></div></div>
+      <div class="settings"><button id="mic-toggle">◉ ENABLE MICROPHONE</button><div class="mic-meter"><i id="mic-fill"></i><b id="mic-threshold"></b></div><p class="small" id="mic-status">Optional · clap to blast, sing to charge</p><label class="small">SENSITIVITY<input id="sensitivity" type="range" min="1" max="10" value="5"></label><label class="small"><input id="reduce-motion" type="checkbox"> Reduce motion</label><label class="small audio-setting">MUSIC <input id="music-volume" type="range" min="0" max="100" value="30" aria-label="Music volume"></label><label class="small audio-setting">EFFECTS <input id="sfx-volume" type="range" min="0" max="100" value="55" aria-label="Effects volume"></label><button id="pause-button">PAUSE / RESUME</button></div>
+      <div class="rail-footer"><span class="small">MATCH THE COLOUR. BREAK THE FORM.<br>DESTROYED BOSS PARTICLES NEVER RETURN.</span></div>
+    </aside>
+  </main>
+  <output id="perf" hidden></output>
+  <!-- Base provided Vehicle class (byte-for-byte untouched) -->
+  <script src="vehicle.js"></script>
+
+  <!-- Data specifications -->
+  <script src="data/tunings.js"></script>
+  <script src="data/bands.js"></script>
+  <script src="data/shapes.js"></script>
+  <script src="data/boss.js"></script>
+  <script src="data/rulerShapes.js"></script>
+
+  <!-- Independent behavior force modules -->
+  <script src="behaviors/velocity.js"></script>
+  <script src="behaviors/formation.js"></script>
+  <script src="behaviors/blast.js"></script>
+  <script src="behaviors/flocking.js"></script>
+  <script src="behaviors/boundaries.js"></script>
+  <script src="behaviors/flee.js"></script>
+  <script src="behaviors/notes.js"></script>
+
+  <!-- Spatial, Economy, & Audio Input Systems -->
+  <script src="systems/SpatialGrid.js"></script>
+  <script src="systems/Score.js"></script>
+  <script src="ui/SpriteAtlas.js"></script>
+  <script src="ui/BossIntro.js"></script>
+  <script src="systems/Hud.js"></script>
+  <script src="data/musicThemes.js"></script>
+  <script src="systems/AudioSynth.js"></script>
+  <script src="systems/MusicDirector.js"></script>
+  <script src="systems/ClapDetector.js"></script>
+  <script src="systems/DemoPilot.js"></script>
+  <script src="systems/DemoCommentary.js"></script>
+
+  <!-- Visible and invisible entities (Each extends Vehicle) -->
+  <script src="Guitar.js"></script>
+  <script src="FormationAnchor.js"></script>
+  <script src="SwarmPoint.js"></script>
+  <script src="Shockwave.js"></script>
+  <script src="Note.js"></script>
+  <script src="Pickup.js"></script>
+  <script src="Spark.js"></script>
+  <script src="SpaceMote.js"></script>
+  <script src="ui/RulerAnimation.js"></script>
+  <script src="Vesper.js"></script>
+  <script src="RulerVision.js"></script>
+  <script src="RulerBoss.js"></script>
+  <script src="ChainDart.js"></script>
+  <script src="EchoPulse.js"></script>
+  <script src="RoomRelic.js"></script>
+  <script src="Musician.js"></script>
+
+  <!-- Choreography & Wave Systems -->
+  <script src="systems/FormationController.js"></script>
+  <script src="systems/BossController.js"></script>
+  <script src="systems/RulerBossController.js"></script>
+  <script src="systems/OpeningScene.js"></script>
+  <script src="systems/FixedStep.js"></script>
+  <script src="systems/Director.js"></script>
+
+  <!-- Game Setup & Main Loop -->
+  <script src="sketch.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Credentials and machine-local configuration
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+
+# Local tooling and generated captures
+node_modules/
+.cache/
+coverage/
+*.log
+playwright_chromiumdev_profile-*/
+playwright-artifacts-*/
+qa-*.png
+.opening-*.png
+.world-*.png
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
