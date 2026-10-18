@@ -369,6 +369,16 @@ function articulatedSlot(shape,offset,progress) {
   const a=offset.jaw*(.72-.65*Math.max(0,Math.min(1,progress)));
   return {x:offset.x*Math.cos(a)-offset.y*Math.sin(a),y:offset.x*Math.sin(a)+offset.y*Math.cos(a)};
 }
+function generateShurikenPoints(count=88) {
+  const points=[],hub=Math.max(12,Math.round(count*.22)),per=Math.floor((count-hub)/4);
+  for(let i=0;i<hub;i++){const a=i/hub*Math.PI*2;points.push({x:Math.cos(a)*.2,y:Math.sin(a)*.2});}
+  for(let blade=0;blade<4;blade++){
+    const a=blade*Math.PI/2,outline=sampleOutline([[.12,-.16],[.69,-.25],[.98,-.03],[.41,.2],[.18,.12]],blade===3?count-hub-per*3:per);
+    for(const p of outline)points.push({x:p.x*Math.cos(a)-p.y*Math.sin(a),y:p.x*Math.sin(a)+p.y*Math.cos(a)});
+  }
+  return points;
+}
+SHAPES.SHURIKEN={name:'Resonance Shuriken',basePoints:88,resonance:'LOW',contactDamage:12,baseScale:86,generate:generateShurikenPoints};
 SHAPES.HAMMER={name:'War Hammer',basePoints:130,resonance:'MID',contactDamage:16,baseScale:115,generate:generateHammerPoints};
 SHAPES.SCISSORS={name:'Shears',basePoints:140,resonance:'HIGH',contactDamage:14,baseScale:120,generate:generateScissorsPoints};
-if(typeof module!=='undefined')Object.assign(module.exports,{generateHammerPoints,generateScissorsPoints,articulatedSlot});
+if(typeof module!=='undefined')Object.assign(module.exports,{generateHammerPoints,generateScissorsPoints,generateShurikenPoints,articulatedSlot});

@@ -207,9 +207,4 @@ canvas{touch-action:none}
 .reduced .demo-wave i,.reduced .tutorial-wave i,.reduced .demo-panel.signal-flash{animation:none}
 @media(prefers-reduced-motion:reduce){.demo-wave i,.tutorial-wave i,.demo-panel.signal-flash{animation:none}}
 
-#boss-intro[data-boss='HERO']{background:linear-gradient(100deg,#071726f5,#17304bf0 65%,#382315e8);border-color:#8bdbf6;box-shadow:0 0 35px #44b5ea40,inset 0 0 30px #ffd08017}
-#boss-intro[data-boss='HERO']::before{background:repeating-linear-gradient(108deg,transparent 0 28px,#64d5ff66 29px,transparent 31px 57px)}
-#boss-intro[data-boss='HERO'] .boss-intro-lines{background:repeating-conic-gradient(from 0deg at 19% 52%,transparent 0deg 12deg,#f6c26366 13deg,transparent 14deg 28deg)}
-#boss-intro[data-boss='HERO'] #boss-intro-name{text-shadow:0 0 20px #71dfff88,3px 3px 0 #b67a3644;font-size:clamp(34px,4.8vw,67px)}
-#boss-intro[data-boss='HERO'] .boss-intro-sigil{color:#ffdc8b;text-shadow:0 0 20px #fff1a7}
 

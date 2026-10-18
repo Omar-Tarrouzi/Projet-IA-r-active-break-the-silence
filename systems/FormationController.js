@@ -17,6 +17,7 @@ class FormationController {
     this.tookDamage = false;
     this.warningTarget=null;
     this.paired=!!options.paired;
+    this.stagingX=options.stagingX??null;
     this.redirected=false;this.redirectCue=false;this.redirectTarget=null;
     this.encoreUsed=false;
 
@@ -145,7 +146,7 @@ class FormationController {
     switch (this.phase) {
       case 'FORMING':
         // Anchor arrives to a central staging position in the upper shaft
-        const stagingPos = createVector(shaft.x + shaft.width * 0.5, shaft.y + shaft.height * 0.28);
+        const stagingPos = createVector(this.stagingX??shaft.x + shaft.width * 0.5, shaft.y + shaft.height * 0.28);
         this.anchor.applyForce(this.anchor.arrive(stagingPos, 0));
         this.anchor.update();
 
@@ -177,6 +178,10 @@ class FormationController {
           const hover=createVector(sideways?warning.x-145:warning.x,sideways?warning.y:warning.y-150);
           this.anchor.applyForce(this.anchor.arrive(hover));
           this.anchor.currentAngle=sideways?Math.PI/2:-1.1;
+        } else if (this.shapeKey === 'SHURIKEN') {
+          const side=this.anchor.pos.x<warning.x?-1:1;
+          this.anchor.applyForce(this.anchor.arrive(createVector(warning.x+side*105,warning.y-120)));
+          this.anchor.currentAngle+=dt*5;
         } else if (this.shapeKey === 'AXE') {
           // Arrive beside guitar and rear back
           const besidePos = createVector(warning.x - 120, warning.y - 100);
@@ -218,7 +223,7 @@ class FormationController {
         break;
 
       case 'STRIKE':
-        if (this.shapeKey !== 'ARROW' && this.shapeKey !== 'SCISSORS') {
+        if (this.shapeKey !== 'ARROW' && this.shapeKey !== 'SCISSORS' && this.shapeKey !== 'SHURIKEN') {
           this.anchor.applyForce(this.anchor.arrive(createVector(this.anchor.pos.x,this.anchor.pos.y)));
           this.anchor.update();
         }
@@ -247,6 +252,17 @@ class FormationController {
             this.phase = 'RECOVER';
             this.phaseTimer = 0;
           }
+        } else if (this.shapeKey === 'SHURIKEN') {
+          this.anchor.maxSpeed=6.8;this.anchor.maxForce=.46;
+          const orbit=-Math.PI/2+this.phaseTimer*4.2;
+          const target={x:this.warningTarget.x+Math.cos(orbit)*108,
+            y:this.warningTarget.y+Math.sin(orbit)*78};
+          const force=redirectPursuitForce(this.anchor,target,.46);
+          this.anchor.applyForce(createVector(force.x,force.y));
+          this.anchor.currentAngle+=dt*13;
+          this.anchor.update();
+          if(this.phaseTimer>=1.75){this.anchor.maxSpeed=3.5;this.anchor.maxForce=.25;
+            this.phase='RECOVER';this.phaseTimer=0;}
         } else if (this.shapeKey === 'HAMMER' || this.shapeKey === 'SCISSORS') {
           if(this.shapeKey==='HAMMER'){
             const u=Math.min(1,this.phaseTimer/1.45);
@@ -326,9 +342,10 @@ class FormationController {
         this.anchor.maxSpeed=5.8;this.anchor.maxForce=.32;
         const force=redirectPursuitForce(this.anchor,guitar.pos,.32);
         this.anchor.applyForce(createVector(force.x,force.y));this.anchor.update();
-        const desired=Math.atan2(guitar.pos.y-this.anchor.pos.y,guitar.pos.x-this.anchor.pos.x)-Math.PI/2;
-        const delta=Math.atan2(Math.sin(desired-this.anchor.currentAngle),Math.cos(desired-this.anchor.currentAngle));
-        this.anchor.currentAngle+=Math.max(-.09,Math.min(.09,delta));
+        if(this.shapeKey==='SHURIKEN')this.anchor.currentAngle+=dt*13;
+        else{const desired=Math.atan2(guitar.pos.y-this.anchor.pos.y,guitar.pos.x-this.anchor.pos.x)-Math.PI/2;
+          const delta=Math.atan2(Math.sin(desired-this.anchor.currentAngle),Math.cos(desired-this.anchor.currentAngle));
+          this.anchor.currentAngle+=Math.max(-.09,Math.min(.09,delta));}
         if(this.phaseTimer>=1.6){this.anchor.maxSpeed=3.5;this.anchor.maxForce=.25;this.phase='EXIT';this.phaseTimer=0;}
         break;
       }
@@ -539,7 +556,7 @@ class FormationController {
   }
 
   show() {
-    if((this.phase==='TELEGRAPH'||this.phase==='ENCORE_WARN')&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION','PINCER'].includes(this.shapeKey)){
+    if((this.phase==='TELEGRAPH'||this.phase==='ENCORE_WARN')&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION','PINCER','SHURIKEN'].includes(this.shapeKey)){
       const c=drawingContext,t=this.phaseTimer,w=this.warningTarget;
       c.save();c.globalAlpha=.28+.28*Math.sin(t*12)**2;c.strokeStyle='#ffd4a5';c.lineWidth=2;c.setLineDash([8,7]);
       c.beginPath();c.arc(w.x,w.y,38+Math.sin(t*9)*6,0,Math.PI*2);c.stroke();

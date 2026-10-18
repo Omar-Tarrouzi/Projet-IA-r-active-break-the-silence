@@ -155,10 +155,10 @@ class ScoreManager {
 
   onPickupCollected(){
     this.pickupChain=Math.min(5,this.pickupChain+1);
-    this.pickupChainTimer=7;
-    const bonus=60*this.getTier()*this.pickupChain;
+    this.pickupChainTimer=8;
+    const bonus=100*this.getTier()*this.pickupChain;
     this.score+=bonus;
-    this.refundVolume(4+this.pickupChain);
+    this.refundVolume(6+this.pickupChain*2);
     return {chain:this.pickupChain,bonus};
   }
 

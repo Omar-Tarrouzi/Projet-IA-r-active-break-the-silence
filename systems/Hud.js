@@ -31,7 +31,7 @@ class Hud {
     this.text('mobile-life',Math.ceil(score.tune));this.text('mobile-volume',Math.floor(score.volume));
     const boss=director.formations.find(f=>f.isBoss&&!f.isDead);
     const demo=typeof demoPilot!=='undefined'&&demoPilot;
-    this.nodes['demo-panel'].hidden=!demo||!!transformationScene;
+    this.nodes['demo-panel'].hidden=!demo;
     this.nodes['demo-panel'].dataset.opening=!!openingScene;
     this.nodes['demo-sound'].hidden=!demo||!audioSynth?.ctx||audioSynth.ctx.state==='running';
     if(demo){const regular=director.formations.find(f=>!f.isBoss&&!f.isDead);
@@ -44,18 +44,10 @@ class Hud {
     }
     this.nodes['boss-hud'].hidden=!boss;
     const introEnd=boss?.profile?2.9:3.45;
-    const heroIntro=typeof transformationScene!=='undefined'&&transformationScene?.titleVisible;
-    const showIntro=heroIntro||!!boss&&boss.phase==='ENTRANCE'&&boss.phaseTimer>1.62&&boss.phaseTimer<introEnd;
+    const showIntro=!!boss&&boss.phase==='ENTRANCE'&&boss.phaseTimer>1.62&&boss.phaseTimer<introEnd;
     this.nodes['boss-intro'].hidden=!showIntro;
     if(demo&&showIntro)this.nodes['demo-panel'].hidden=true;
-    if(heroIntro){
-      this.nodes['boss-intro'].dataset.boss='HERO';
-      this.nodes['boss-intro'].style.setProperty('--intro-color','#82e8ff');
-      this.text('boss-intro-kicker','THE FIFTH NOTE · AN UNWRITTEN FUTURE');
-      this.text('boss-intro-sigil','✦');this.text('boss-intro-name','THE SOUND BEARER');
-      this.text('boss-intro-domain','GUITARIST & GUITAR · ONE RESONANCE');
-    }
-    if(boss&&!heroIntro){const profile=boss.profile||{name:'VESPER',domain:'SOVEREIGN OF SILENCE',altitude:1000};
+    if(boss){const profile=boss.profile||{name:'VESPER',domain:'SOVEREIGN OF SILENCE',altitude:1000};
       const intro=BOSS_INTROS[boss.bossWord]||BOSS_INTROS.HUSH;
       this.nodes['boss-intro'].dataset.boss=boss.bossWord;
       this.nodes['boss-intro'].style.setProperty('--intro-color',intro.color);
@@ -64,7 +56,7 @@ class Hud {
       this.text('boss-intro-kicker',intro.kicker);
     }
     if(showIntro){
-      const t=boss?.phaseTimer||0,appear=heroIntro?transformationScene.titleProgress:bossIntroReveal(t).card,leave=heroIntro?1:Math.min(1,(introEnd-t)*3),visibility=Math.max(0,Math.min(appear,leave));
+      const t=boss.phaseTimer,appear=bossIntroReveal(t).card,leave=Math.min(1,(introEnd-t)*3),visibility=Math.max(0,Math.min(appear,leave));
       this.nodes['boss-intro'].style.opacity=visibility;
       this.nodes['boss-intro'].style.transform=reduceMotion?'none':'translate3d('+(1-appear)*-55+'px,'+(1-appear)*16+'px,0) scale('+(0.96+appear*.04)+')';
       this.nodes['boss-intro'].style.setProperty('--intro-clip',(100*(1-appear))+'%');
@@ -75,11 +67,11 @@ class Hud {
       const shield=Math.max(0,Math.min(1,count/boss.initialPointCount));
       this.bar('boss-fill',reforming?Math.max(0,(hits-boss.coreHits-.5+shield*.5)/hits):exposed?(hits-boss.coreHits)/hits:shield);
       this.text('boss-count',reforming?'CORE '+boss.coreHits+'/'+hits+' · SWARM '+count:exposed?'CORE '+(hits-boss.coreHits)+' / '+hits:count+' / '+boss.initialPointCount);this.text('boss-phase',(boss.getAct?'ACT '+boss.getAct()+' · ':'')+boss.phase.replaceAll('_',' '));this.text('boss-counter',boss.getHint?boss.getHint():boss.profile?(exposed?boss.profile.coreTune+' · HIT CORE':boss.phase.endsWith('_WARN')?'MATCH '+(boss.phase.startsWith('A')?boss.profile.attackATune:boss.profile.attackBTune)+' · BREAK FORM':boss.phase==='A'||boss.phase==='B'?'DODGE · SHATTER PARTICLES':'PREPARE'):['SHIELD','RECALL'].includes(boss.phase)?'MID · BREAK GUARD':['HAND','HAND_WARN'].includes(boss.phase)?'LOW · BREAK GRASP':['MISSILE','MISSILE_WARN'].includes(boss.phase)?'MATCH COLOUR · PARRY':['ORBIT','ORBIT_WARN'].includes(boss.phase)?'FIND THE GAP':exposed?'CHARGE HIGH · HIT CORE':'HIGH · PIERCE');}
-    const live=hasStarted&&!openingScene&&!transformationScene&&!isPaused&&!score.gameOver&&!(score.gameWon&&!score.endlessMode);
+    const live=hasStarted&&!openingScene&&!isPaused&&!score.gameOver&&!(score.gameWon&&!score.endlessMode);
     const regular=director.formations.find(f=>!f.isBoss&&!f.isDead&&['TELEGRAPH','STRIKE'].includes(f.phase));
     let guide=boss?.getGuide?.();
     if(!guide&&regular){
-      const actions={HAMMER:'DODGE THE SWING',SCISSORS:'SLIP BETWEEN THE BLADES',ARROW:'MOVE AFTER IT LOCKS ON',AXE:'GET BEHIND THE PIVOT',HAND:'ESCAPE THE PALM',JACKHAMMER:'MOVE BETWEEN POUNDS',PINCER:'DASH THROUGH THE GAP',MURMURATION:'GROUP THE FLOCK · BLAST'};
+      const actions={HAMMER:'DODGE THE SWING',SCISSORS:'SLIP BETWEEN THE BLADES',ARROW:'MOVE AFTER IT LOCKS ON',AXE:'GET BEHIND THE PIVOT',HAND:'ESCAPE THE PALM',JACKHAMMER:'MOVE BETWEEN POUNDS',PINCER:'DASH THROUGH THE GAP',MURMURATION:'GROUP THE FLOCK · BLAST',SHURIKEN:'DODGE ITS ROTATING PATH'};
       guide={kicker:regular.shapeKey+' · '+regular.phase,action:actions[regular.shapeKey]||'BREAK THE FORM',
         detail:'Match its resonance: '+regular.shapeDef.resonance+' · 1/2/3 to tune.',progress:regular.phase==='TELEGRAPH'?regular.phaseTimer/1.25:1};
     }
@@ -90,8 +82,8 @@ class Hud {
     this.bar('mic-fill',Math.min(1,(mic?.currentLevel||0)*3));
     this.nodes['mic-threshold'].style.transform='translateX('+Math.min(100,(mic?.threshold||.18)*300)+'px)';
     this.text('mic-status',mic?.permissionDenied?'Microphone unavailable · mouse controls ready':mic?.isListening?'LISTENING · '+Math.round(mic.currentLevel*100)+'%':'Optional · clap to blast, sing to charge');
-    this.text('session-status',openingScene?'ORIGIN / THE ROOM':transformationScene?'A NEW RESONANCE':director.bossActive?'BOSS ENCOUNTER':isPaused?'SESSION PAUSED':'LIVE / '+Math.floor(score.altitude)+' M');
-    const state=transformationScene?'play':!hasStarted?'title':score.gameOver?'over':score.gameWon&&!score.endlessMode?'won':isPaused?'pause':'play';
+    this.text('session-status',openingScene?'ORIGIN / THE ROOM':director.bossActive?'BOSS ENCOUNTER':isPaused?'SESSION PAUSED':'LIVE / '+Math.floor(score.altitude)+' M');
+    const state=!hasStarted?'title':score.gameOver?'over':score.gameWon&&!score.endlessMode?'won':isPaused?'pause':'play';
     if(this.cache.get('screen')===state)return;this.cache.set('screen',state);
     document.body.classList.toggle('paused',state!=='play');
     this.nodes.screen.hidden=state==='play';
