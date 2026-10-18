@@ -124,8 +124,8 @@ function drawRulerAnimation(c,body){
   const layer=rulerRenderSurface.getContext('2d');
   layer.clearRect(0,0,320,280);layer.save();layer.translate(160,140);
   layer.imageSmoothingEnabled=false;
-  if(key==='VESPER'){
-   // Keep Vesper's silhouette intact; moving strips made his body look severed.
+  if(key==='VESPER'||key==='ONYX'){
+   // Keep Vesper and Onyx intact; independently moving strips exposed seams.
    const w=Math.min(260,h*img.width/img.height),x=-w/2,y=-h/2;
    const old=previous&&sceneAssets[previous];
    if(old&&blend<1){layer.globalAlpha=1-blend;layer.drawImage(old.canvas,x,y,w,h);layer.globalAlpha=blend;}

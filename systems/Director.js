@@ -47,9 +47,10 @@ class Director {
       if(this.formations.length===0) this.spawnBoss(pending.bossWord,shaft,font);
       return;
     }
-    // Check regular wave spawns
+    // Departing and broken formations no longer block the next visible encounter.
+    const activeRegular=this.formations.filter(f=>!f.isBoss&&!f.isDead&&!['EXIT','BROKEN'].includes(f.phase));
     this.waveTimer -= dt;
-    if (this.waveTimer <= 0 && this.formations.length < this.currentBand.maxFormations && !this.bossActive) {
+    if (this.waveTimer <= 0 && activeRegular.length < this.currentBand.maxFormations && !this.bossActive) {
       // Keep one readable target lock at a time, but let attacks overlap after it.
       if(this.formations.some(f=>!f.isBoss&&f.phase==='TELEGRAPH')){this.waveTimer=.45;return;}
       this.spawnWave(shaft, font);
@@ -109,6 +110,7 @@ class Director {
     if (controller.isBoss) {
       this.bossActive = false;
       this.bossDefeated[controller.bossWord] = true;
+      this.waveTimer=Math.min(this.waveTimer,.45);
       scoreManager.healTune(30);
       scoreManager.addHarmonizeCharge();
     }
@@ -122,7 +124,7 @@ class Director {
     else if(scoreManager.volume<90)this.spawnPickup(shaft,'VOLUME');
 
     // Trigger rest window so player catches breath
-    this.restTimer = this.currentBand.restWindow;
+    this.restTimer = controller.isBoss?.6:this.currentBand.restWindow;
     return scoreManager.lastClear;
   }
 

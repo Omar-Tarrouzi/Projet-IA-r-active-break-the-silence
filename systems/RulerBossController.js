@@ -50,17 +50,17 @@ class RulerBossController {
     for(const p of victims)this.damagePoint(p);
     return victims.length;
   }
-  regenerate(){
-    if(this.phase!=='RECOVER'||this.regenerationReserve<=0)return 0;
-    const count=Math.min(12,this.regenerationReserve,Math.max(0,108-this.getLivePoints().length));
+  regenerate(requested=12,forced=false){
+    if(!forced&&(this.phase!=='RECOVER'||this.regenerationReserve<=0))return 0;
+    const count=Math.min(requested,forced?this.initialPointCount:this.regenerationReserve,Math.max(0,108-this.getLivePoints().length));
     if(!count)return 0;
     let restored=0;
-    for(const p of this.points){if(!p.isDead||p.isConverted)continue;
-      p.isDead=false;p.state='HOMED';p.stunTimer=0;p.dangerous=false;
+    for(const p of this.points){if(!p.isDead&&!p.isConverted)continue;
+      p.isConverted=false;p.isDead=false;p.state='HOMED';p.stunTimer=0;p.dangerous=false;
       p.chainIndex=null;p.chainSlot=null;
       if(++restored===count)break;
     }
-    this.regenerationReserve-=restored;
+    if(!forced)this.regenerationReserve-=restored;
     if(restored&&typeof hud!=='undefined'&&hud)hud.addPopup('SWARM REFORMS · +'+restored,this.anchor.pos.x,this.anchor.pos.y-105,this.profile.color);
     return restored;
   }
@@ -254,7 +254,9 @@ class RulerBossController {
     if(this.phase==='ENTRANCE')return {kicker,action:'READ THE RULER',detail:'The first attack gives you time to learn.',progress:0};
     if(this.phase==='EXPOSED')return {kicker:this.profile.name+' · FINALE',
       action:this.profile.key==='CADENCE'?'DODGE THE DIAMOND · GUIDE IT BACK':'PARRY THE BLUE FIRE BACK',
-      detail:this.profile.coreTune+' direct blasts also hurt the exposed core. '+(this.coreHitsRequired-this.coreHits)+' hits remain.',progress:this.coreHits/this.coreHitsRequired};
+      detail:this.profile.coreTune+' direct blasts also hurt. '+(this.coreHitsRequired-this.coreHits)+' hits remain.'+
+        (this.profile.key==='NOVA'?' Blue fire reforms in '+Math.ceil(Math.max(0,7.5-this.phaseTimer))+'s.':''),
+      progress:this.profile.key==='NOVA'?this.phaseTimer/7.5:this.coreHits/this.coreHitsRequired};
     if(this.phase==='DEFEAT')return {kicker,action:'SOVEREIGN BROKEN',detail:'The ascent continues.',progress:1};
     if(this.phase==='RECOVER'&&!this.chainDarts.some(d=>!d.isDead&&d.mode==='HOLD')&&!this.echoes.some(e=>!e.isDead&&e.mode==='SEEK'))
       return {kicker,action:this.counterSeen?'COUNTER LANDED · RECHARGE':'DIRECT HIT · CHIP THE RULER',detail:'Open body shots remove a few particles.',progress:0};
@@ -313,6 +315,15 @@ class RulerBossController {
         if(this.phaseTimer>=this.diamondLaunches*2+.5&&this.diamonds.filter(d=>!d.isDead).length<2)
           this.launchDiamond(guitar);
         this.updateDiamonds(dt,guitar);
+      }
+      if(this.profile.key==='NOVA'&&this.phase==='EXPOSED'&&this.phaseTimer>=7.5&&this.pendingCoreHits===0){
+        const restored=this.regenerate(52,true);
+        this.phase='A_WARN';this.phaseTimer=0;this.anchor.phase='A_WARN';this.nextAttack='A_WARN';
+        this.echoLaunches=0;
+        if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playWarning('NOVA');
+        this.focus={x:Math.max(shaft.x+245,Math.min(shaft.x+shaft.width-245,guitar.pos.x)),
+          y:Math.max(shaft.y+360,Math.min(shaft.y+shaft.height-220,guitar.pos.y))};
+        if(typeof hud!=='undefined'&&hud)hud.addPopup('BLUE FIRE REFORMS · +'+restored,a.pos.x,a.pos.y-105,this.profile.color);
       }
       return;
     }
@@ -445,7 +456,9 @@ class RulerBossController {
       for(let i=0;i<this.coreHitsRequired-this.coreHits;i++){c.globalAlpha=.75-i*.2;c.beginPath();
         c.arc(this.anchor.pos.x,this.anchor.pos.y,45+i*14+Math.sin(this.phaseTimer*3+i)*3,0,Math.PI*2);c.stroke();}
       c.globalAlpha=1;c.fillStyle=this.profile.color;c.font='bold 14px monospace';
-      c.fillText(this.profile.coreTune+' / '+(this.coreHitsRequired-this.coreHits)+' CORE HITS',this.anchor.pos.x,this.anchor.pos.y-115);c.restore();
+      c.fillText(this.profile.coreTune+' / '+(this.coreHitsRequired-this.coreHits)+' CORE HITS'+
+        (this.profile.key==='NOVA'?' · '+Math.ceil(Math.max(0,7.5-this.phaseTimer))+'s':''),
+        this.anchor.pos.x,this.anchor.pos.y-115);c.restore();
     }
     if(this.phase==='DEFEAT'){c.save();c.globalAlpha=Math.max(0,1-this.defeatTimer/2.4);
       this.anchor.show();c.restore();return;}
