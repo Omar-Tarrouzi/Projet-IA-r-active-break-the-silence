@@ -26,6 +26,7 @@ class DemoPilot {
     target={x:focus.pos.x,y:exposed?shaft.y+shaft.height*.45:
       clamp(focus.pos.y+260,shaft.y+shaft.height*.47,shaft.y+shaft.height*.74)};
     reason=exposed?'CORE':'BOSS';power=exposed?.95:.68;
+    if(exposed&&boss.coreDangerous){target={x:clamp(guitar.pos.x+(guitar.pos.x<boss.coreAim.x?-145:145),shaft.x+35,shaft.x+shaft.width-35),y:shaft.y+shaft.height*.62};reason='EVADE';}
     if(!exposed&&boss.profile?.key==='ONYX'){
       const dart=boss.chainDarts.find(d=>!d.isDead&&d.mode==='HOLD');
       if(dart){focus=dart;tuning='MID';target={x:dart.pos.x,y:clamp(dart.pos.y+105,shaft.y+shaft.height*.47,shaft.y+shaft.height*.8)};
@@ -62,7 +63,8 @@ class DemoPilot {
   const radius={LOW:230,MID:340,HIGH:580}[tuning]*(.4+.6*power);
   const cone=tuning==='HIGH'?Math.abs(dx)<Math.max(26,-dy*.18):tuning==='MID'?Math.abs(dx)<Math.max(95,-dy*1.45):true;
   if(!fire&&focus&&!danger&&this.cooldown===0&&score.canFireBlast(power)&&dist<radius*.91&&
-    (dy<0||tuning==='LOW')&&cone&&reason!=='TUG'&&reason!=='BEAT'&&(!boss||boss.phase!=='ENTRANCE'))fire=true;
+    (dy<0||tuning==='LOW')&&cone&&reason!=='TUG'&&reason!=='BEAT'&&(!boss||boss.phase!=='ENTRANCE')&&
+    (!boss||boss.phase!=='EXPOSED'||boss.profile||boss.coreVulnerable))fire=true;
   if(fire&&!score.canFireBlast(power))fire=false;
   this.lastAction=reason;
   if(fire){this.cooldown=reason==='BEAT'?.72:reason==='TUG'?1.3:2.05;this.shots++;}

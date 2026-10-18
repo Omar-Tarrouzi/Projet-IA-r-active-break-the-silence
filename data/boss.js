@@ -4,6 +4,7 @@ const VESPER = Object.freeze({
   ringSpeed: 0.24, ringGap: 0.62, ringRadii: [105, 167, 229],
   missileCount: 4, missileDamage: 16, missileHitRadius: 58,
   missileParticlesPerVolley: 64, defeatDuration: 2.4, coreHitsRequired: 3,
+  regenerationReserve: 144, regenerationBatch: 28, regenerationCeiling: 216,
   durations: { ENTRANCE: 3.6, ORBIT_WARN: 1.5, ORBIT: 4.8, RECALL: 1.8,
     SHIELD: 2.5, HAND_WARN: 1.4, HAND: 2.3, RECOVER: 1.7,
     MISSILE_WARN: 1.4, MISSILE: 4, WORD_WARN: 1.8, WORD_ATTACK: 3,

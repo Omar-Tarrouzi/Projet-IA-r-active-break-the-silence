@@ -15,9 +15,14 @@ class ChainDart extends Vehicle {
     if(this.isDead)return;
     const c=drawingContext,heading=this.vel.mag()>.2?Math.atan2(this.vel.y,this.vel.x):Math.PI/2;
     c.save();c.translate(this.pos.x,this.pos.y);c.rotate(heading+Math.PI/2);
-    c.shadowColor='#ff315c';c.shadowBlur=24;c.fillStyle=this.mode==='RETURN'?'#fff4bd':'#ff315c';
-    c.strokeStyle='#ffe1e8';c.lineWidth=2;c.beginPath();
-    c.moveTo(0,-33);c.lineTo(20,17);c.lineTo(0,8);c.lineTo(-20,17);c.closePath();c.fill();c.stroke();
+    const state=this.mode==='WARN'?'warn':this.mode==='RETURN'?'counter':
+      this.mode==='HOLD'?'hit':'active';
+    if(typeof attackAtlas!=='undefined'&&attackAtlas)
+      attackAtlas.draw(c,'onyxTip',state,0,0,58,0,this.age);
+    else{
+      c.fillStyle=this.mode==='RETURN'?'#fff4bd':'#ff315c';
+      c.beginPath();c.moveTo(0,-33);c.lineTo(20,17);c.lineTo(0,8);c.lineTo(-20,17);c.closePath();c.fill();
+    }
     c.restore();
   }
 }

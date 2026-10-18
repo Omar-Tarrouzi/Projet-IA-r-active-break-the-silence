@@ -80,7 +80,7 @@ function setup() {
 
   spatialGrid = new SpatialGrid(60);
   scoreManager = new ScoreManager();
-  spriteAtlas=new SpriteAtlas();
+  spriteAtlas=new SpriteAtlas(); attackAtlas=new AttackAtlas();
   document.getElementById("hero-guitar").src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(GUITAR_SVG);
   hud = new Hud();
   director = new Director(7391);

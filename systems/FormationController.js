@@ -148,46 +148,49 @@ class FormationController {
 
         if (this.phaseTimer >= 1.4) {
           this.phase = 'TELEGRAPH';
-          this.phaseTimer = 0;
+          this.phaseTimer = 0;this.warningTarget=null;
           if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playWarning(this.shapeKey);
         }
         break;
 
       case 'TELEGRAPH':
-        this.warningTarget={x:guitar.pos.x,y:guitar.pos.y};
+        const lockAt=['HAMMER','SCISSORS'].includes(this.shapeKey)?1.2:.55;
+        if(!this.warningTarget||this.phaseTimer<lockAt)this.warningTarget={x:guitar.pos.x,y:guitar.pos.y};
+        const warning=this.warningTarget;
         // Distinct readable wind-ups
         if (this.shapeKey === 'ARROW') {
           // Pursue player during aim
-          const pursueF = this.anchor.pursue(guitar);
+          const pursueF = this.phaseTimer<lockAt?this.anchor.pursue(guitar):
+            this.anchor.arrive(createVector(warning.x,warning.y-110));
           if (pursueF) {
             pursueF.mult(0.65);
             this.anchor.applyForce(pursueF);
           }
           // Face direction of player
-          const aimVec = p5.Vector.sub(guitar.pos, this.anchor.pos);
+          const aimVec = p5.Vector.sub(createVector(warning.x,warning.y), this.anchor.pos);
           this.anchor.currentAngle = aimVec.heading() - Math.PI / 2;
         } else if (this.shapeKey === 'HAMMER' || this.shapeKey === 'SCISSORS') {
-          const hover=createVector(guitar.pos.x,guitar.pos.y-150);
+          const hover=createVector(warning.x,warning.y-150);
           this.anchor.applyForce(this.anchor.arrive(hover));
           this.anchor.currentAngle=this.shapeKey==='HAMMER'?-1.1:0;
         } else if (this.shapeKey === 'AXE') {
           // Arrive beside guitar and rear back
-          const besidePos = createVector(guitar.pos.x - 120, guitar.pos.y - 100);
+          const besidePos = createVector(warning.x - 120, warning.y - 100);
           this.anchor.applyForce(this.anchor.arrive(besidePos, 0));
           this.anchor.currentAngle = -Math.PI * 0.6; // Reared back
         } else if (this.shapeKey === 'HAND') {
           // Drift near guitar with open wide fingers
-          const hoverPos = createVector(guitar.pos.x, guitar.pos.y - 90);
+          const hoverPos = createVector(warning.x, warning.y - 90);
           this.anchor.applyForce(this.anchor.arrive(hoverPos, 0));
           this.anchor.currentScale = this.shapeDef.baseScale * (1.1 + Math.sin(this.phaseTimer * 4) * 0.15);
         } else if (this.shapeKey === 'JACKHAMMER') {
           // Track guitar X above player
-          const abovePos = createVector(guitar.pos.x, shaft.y + shaft.height * 0.35);
+          const abovePos = createVector(warning.x, shaft.y + shaft.height * 0.35);
           this.anchor.applyForce(this.anchor.arrive(abovePos, 0));
         } else if (this.shapeKey === 'MURMURATION') {
           // The iris dilates before its particles rush the guitar.
           this.anchor.currentScale=this.shapeDef.baseScale*(1+Math.sin(this.phaseTimer*7)*.13);
-          const targetPos = createVector(guitar.pos.x, guitar.pos.y - 120);
+          const targetPos = createVector(warning.x, warning.y - 120);
           this.anchor.applyForce(this.anchor.arrive(targetPos, 0));
         } else if (this.isBoss) {
           // Boss Word hover and pulse
@@ -204,7 +207,7 @@ class FormationController {
           if (this.shapeKey === 'MURMURATION') for(const p of this.getLivePoints()) if(p.state==='HOMED')p.state='FLOCK';
           if (this.shapeKey === 'ARROW') {
             // Lock dash velocity!
-            this.anchor.lockStrikeVelocity(guitar.pos, 8.5);
+            this.anchor.lockStrikeVelocity(createVector(warning.x,warning.y), 8.5);
           }
         }
         break;
@@ -275,7 +278,7 @@ class FormationController {
           this.repeats--;
           if (this.repeats > 0) {
             this.phase = 'TELEGRAPH';
-            this.phaseTimer = 0;
+            this.phaseTimer = 0;this.warningTarget=null;
           } else {
             this.phase = 'EXIT';
             this.phaseTimer = 0;
@@ -320,7 +323,7 @@ class FormationController {
 
         if (this.phaseTimer >= 1.4) {
           this.phase = 'TELEGRAPH';
-          this.phaseTimer = 0;
+          this.phaseTimer = 0;this.warningTarget=null;
           if (typeof audioSynth !== 'undefined' && audioSynth && audioSynth.playPincerWarning) {
             audioSynth.playPincerWarning();
           }
@@ -333,13 +336,14 @@ class FormationController {
 
       case 'TELEGRAPH': {
         // Flank positions on opposite walls tracking player Y
-        const targetY = Math.min(shaft.y + shaft.height * 0.72, Math.max(shaft.y + 140, guitar.pos.y - 60));
+        if(!this.warningTarget||this.phaseTimer<.7)this.warningTarget={x:guitar.pos.x,y:guitar.pos.y};
+        const targetY = Math.min(shaft.y + shaft.height * 0.72, Math.max(shaft.y + 140, this.warningTarget.y - 60));
         const flankL = createVector(shaft.x + 65, targetY);
         const flankR = createVector(shaft.x + shaft.width - 65, targetY);
 
         if (liveLeft > 0) {
           this.anchorLeft.applyForce(this.anchorLeft.arrive(flankL, 0));
-          const aimVecL = p5.Vector.sub(guitar.pos, this.anchorLeft.pos);
+          const aimVecL = p5.Vector.sub(createVector(this.warningTarget.x,this.warningTarget.y), this.anchorLeft.pos);
           this.anchorLeft.currentAngle = aimVecL.heading() - Math.PI / 2;
           this.anchorLeft.currentScale = this.shapeDef.baseScale * (1.0 + Math.sin(this.phaseTimer * 16) * 0.12);
           this.anchorLeft.update();
@@ -352,7 +356,7 @@ class FormationController {
 
         if (liveRight > 0) {
           this.anchorRight.applyForce(this.anchorRight.arrive(flankR, 0));
-          const aimVecR = p5.Vector.sub(guitar.pos, this.anchorRight.pos);
+          const aimVecR = p5.Vector.sub(createVector(this.warningTarget.x,this.warningTarget.y), this.anchorRight.pos);
           this.anchorRight.currentAngle = aimVecR.heading() - Math.PI / 2;
           this.anchorRight.currentScale = this.shapeDef.baseScale * (1.0 + Math.sin(this.phaseTimer * 16) * 0.12);
           this.anchorRight.update();
@@ -367,8 +371,8 @@ class FormationController {
           this.phase = 'STRIKE';
           this.phaseTimer = 0;
           // Scissor cross-strike velocities: Left dashes across to right, Right dashes across to left!
-          const crossTargetL = createVector(shaft.x + shaft.width * 0.82, guitar.pos.y + 70);
-          const crossTargetR = createVector(shaft.x + shaft.width * 0.18, guitar.pos.y + 70);
+          const crossTargetL = createVector(shaft.x + shaft.width * 0.82, this.warningTarget.y + 70);
+          const crossTargetR = createVector(shaft.x + shaft.width * 0.18, this.warningTarget.y + 70);
           if (liveLeft > 0) this.anchorLeft.lockStrikeVelocity(crossTargetL, 9.8);
           if (liveRight > 0) this.anchorRight.lockStrikeVelocity(crossTargetR, 9.8);
         }
@@ -413,7 +417,7 @@ class FormationController {
           this.repeats--;
           if (this.repeats > 0) {
             this.phase = 'TELEGRAPH';
-            this.phaseTimer = 0;
+            this.phaseTimer = 0;this.warningTarget=null;
           } else {
             this.phase = 'EXIT';
             this.phaseTimer = 0;
@@ -469,7 +473,7 @@ class FormationController {
   }
 
   show() {
-    if(this.phase==='TELEGRAPH'&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER'].includes(this.shapeKey)){
+    if(this.phase==='TELEGRAPH'&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION'].includes(this.shapeKey)){
       const c=drawingContext,t=this.phaseTimer,w=this.warningTarget;
       c.save();c.globalAlpha=.28+.28*Math.sin(t*12)**2;c.strokeStyle='#ffd4a5';c.lineWidth=2;c.setLineDash([8,7]);
       c.beginPath();c.arc(w.x,w.y,38+Math.sin(t*9)*6,0,Math.PI*2);c.stroke();

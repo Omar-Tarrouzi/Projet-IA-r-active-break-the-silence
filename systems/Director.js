@@ -50,6 +50,8 @@ class Director {
     // Check regular wave spawns
     this.waveTimer -= dt;
     if (this.waveTimer <= 0 && this.formations.length < this.currentBand.maxFormations && !this.bossActive) {
+      // Do not layer a fresh formation over a live warning or strike.
+      if(this.formations.some(f=>!f.isBoss&&['TELEGRAPH','STRIKE'].includes(f.phase))){this.waveTimer=.8;return;}
       this.spawnWave(shaft, font);
       this.waveTimer = 2.3 + this.random() * 1.3;
     }

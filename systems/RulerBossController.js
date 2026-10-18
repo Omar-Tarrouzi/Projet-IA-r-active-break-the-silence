@@ -37,7 +37,7 @@ class RulerBossController {
       const dart=this.chainDarts[p.chainIndex];
       if(dart&&!dart.isDead&&dart.mode!=='RETURN'){
         this.chainBreaks[p.chainIndex]=(this.chainBreaks[p.chainIndex]||0)+1;
-        if(this.chainBreaks[p.chainIndex]>=14)this.returnChain(dart,'LINKS BROKEN');
+        if(this.chainBreaks[p.chainIndex]>=Math.min(14,Math.max(5,Math.ceil(this.getLivePoints().filter(q=>q.chainIndex===p.chainIndex).length*.28))))this.returnChain(dart,'LINKS BROKEN');
       }
     }
     this.finishIfEmpty();return true;
@@ -121,6 +121,7 @@ class RulerBossController {
       }
       if(dart.mode==='RETURN'&&Math.hypot(dart.pos.x-this.anchor.pos.x,dart.pos.y-this.anchor.pos.y)<55){
         dart.isDead=true;const hits=this.damageReserve(24,this.anchor.pos);reactRuler(this.anchor);
+        this.staggerTimer=Math.max(this.staggerTimer,.75);
         if(typeof spawnSparks==='function')spawnSparks(this.anchor.pos.x,this.anchor.pos.y,'#ff718f',20);
         if(typeof hud!=='undefined'&&hud)hud.addPopup('DISCORD RECOILS · -'+hits,
           this.anchor.pos.x,this.anchor.pos.y-90,'#ff718f');
@@ -131,7 +132,8 @@ class RulerBossController {
   }
   launchEcho(guitar){
     if(this.echoes.filter(e=>!e.isDead).length>=3)return;
-    const e=new EchoPulse(this.anchor.pos.x,this.anchor.pos.y+70,guitar.pos,this.echoTune);
+    const fan=this.phase==='B'?(this.echoLaunches-1)*125:0;
+    const e=new EchoPulse(this.anchor.pos.x,this.anchor.pos.y+70,{x:guitar.pos.x+fan,y:guitar.pos.y},this.echoTune);
     this.echoes.push(e);this.echoLaunches++;
     if(typeof hud!=='undefined'&&hud)hud.addPopup('ECHO · '+e.tuning+' RETURNING',
       guitar.pos.x,guitar.pos.y-80,'#74d9ff');
@@ -153,6 +155,7 @@ class RulerBossController {
       if(e.isDead)continue;e.updatePulse(dt,this.anchor.pos);
       if(e.mode==='RETURN'&&Math.hypot(e.pos.x-this.anchor.pos.x,e.pos.y-this.anchor.pos.y)<55){
         e.isDead=true;const hits=this.damageReserve(22,this.anchor.pos);reactRuler(this.anchor);
+        this.staggerTimer=Math.max(this.staggerTimer,.75);
         if(typeof hud!=='undefined'&&hud)hud.addPopup('ECHO COLLAPSE · -'+hits,
           this.anchor.pos.x,this.anchor.pos.y-90,'#74d9ff');
       }else if(e.mode==='SEEK'&&Math.hypot(e.pos.x-e.target.x,e.pos.y-e.target.y)<32){
@@ -189,10 +192,10 @@ class RulerBossController {
       const held=this.chainDarts.find(d=>!d.isDead&&d.mode==='HOLD');
       if(held)return {kicker,action:'HOLD CLICK NEAR THE RED TIP',detail:'Build TUG, then RELEASE to return the dart.',progress:held.tugProgress};
       return {kicker,action:this.phase.endsWith('_WARN')?'RED TRIANGLE INCOMING':'BREAK CHAIN LINKS · OR TUG THE TIP',
-        detail:'14 broken links also turn the dart back.',progress:0};
+        detail:'Break enough links to turn the dart back.',progress:0};
     }
     if(this.profile.key==='NOVA'){const echo=this.echoes.find(e=>!e.isDead&&e.mode==='SEEK');
-      return {kicker,action:echo?'MATCH '+echo.tuning+' · PARRY THE ECHO':'WATCH THE ECHO SYMBOL',
+      return {kicker,action:echo?'MATCH '+echo.tuning+' · PARRY THE BLUE FIRE':'WATCH THE BLUE FIRE',
         detail:echo?'Switch tuning, charge, and release into the pulse.':'It repeats the tuning of your last blast.',progress:echo?Math.min(1,echo.age/3):0};
     }
     if(this.phase==='RECOVER')return {kicker,action:'CATCH THE NEXT BEAT',detail:'Reposition and recharge for the next measure.',progress:0};

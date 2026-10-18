@@ -6,7 +6,7 @@ Un soir, un guitariste joue une mélodie maudite dans sa chambre. La lumière é
 
 *ASCENT* est un jeu d'action 2D où l'on esquive, charge des ondes soniques et disperse des essaims de particules. Ces ennemis se regroupent en mains, marteaux, ciseaux et autres constructions avant d'attaquer. On peut jouer entièrement à la souris, ou laisser ses sons et claquements de mains entrer dans la partie.
 
-> Projet de **Master IA2 UNICA — IA réactive**, inspiré des comportements de pilotage de Craig Reynolds. Le jeu fonctionne directement dans le navigateur.
+> Projet de **Master IA2 UNICA — IA réactive**, inspiré des comportements de pilotage de Craig Reynolds. Le jeu fonctionne directement dans le navigateur. **Version 2** : des boss plus lisibles, des attaques de feu bleu pour Nova et des formes qui annoncent leur cible avant de frapper.
 
 ## Lancer le jeu
 
@@ -17,6 +17,8 @@ python -m http.server 8765
 ```
 
 Ouvrez ensuite **[http://127.0.0.1:8765/](http://127.0.0.1:8765/)**. Python 3 et un navigateur moderne suffisent ; les images, la police et p5.js sont inclus. La musique et les effets sonores sont générés pendant la partie.
+
+Pour partager le jeu via GitHub Pages, publiez la branche **main** depuis la racine **/** dans **Settings → Pages**. Le microphone demande une connexion HTTPS et une autorisation du navigateur ; la souris et le clavier restent toujours utilisables.
 
 ## Comment jouer ?
 
@@ -31,7 +33,7 @@ Ouvrez ensuite **[http://127.0.0.1:8765/](http://127.0.0.1:8765/)**. Python 3 et
 
 **Envie de jouer avec le son ?** Activez le microphone dans le menu ou avec **M**, puis autorisez son accès dans le navigateur. Un **claquement bref** déclenche une attaque MID ; **chanter ou maintenir un son** charge une attaque HIGH, libérée quand le son s'arrête. Le réglage **Sensitivity** aide à adapter la détection à votre micro et à votre pièce. Le micro reste facultatif : toutes les actions essentielles sont disponibles sans lui.
 
-Les fréquences ont chacune leur utilité : **LOW** repousse autour de vous, **MID** couvre une zone en cône, **HIGH** perce loin devant. Observez la forme et la couleur des attaques, puis choisissez le bon moment pour riposter. Le jeu affiche aussi des indications pendant les combats.
+Les fréquences ont chacune leur utilité : **LOW** repousse autour de vous, **MID** couvre une zone en cône, **HIGH** perce loin devant. Observez la forme et la couleur des attaques, puis choisissez le bon moment pour riposter. Les formes ordinaires marquent leur cible et s'y engagent avant la frappe : changez de place après le verrouillage. Le jeu affiche aussi des indications pendant les combats.
 
 ## Les souverains
 
@@ -39,9 +41,9 @@ Chaque rencontre change la façon de jouer. Les souverains ne se contentent pas 
 
 | Rencontre | Domaine et défi |
 | --- | --- |
-| **Vesper — 1 000 m** | Maître du silence. Son essaim devient un **trône**, une **main**, des anneaux presque fermés et des missiles. Trouvez l'ouverture, renvoyez ses attaques ; quand ses particules s'épuisent, attention à sa **lance**. |
+| **Vesper — 1 000 m** | Maître du silence. Son essaim devient un **trône**, une **main**, des anneaux presque fermés et des missiles. Trouvez l'ouverture, renvoyez ses attaques ; il peut rappeler un nombre limité de particules, mais un tir direct interrompt ce rappel. Une fois son essaim épuisé, esquivez sa ruée : le **cœur** ne s'ouvre que pendant sa récupération, une fois par cycle. |
 | **Harm Onyx — 2 000 m** | Reine de la discorde. Des **fléchettes triangulaires** traînent des chaînes rouges. Brisez les maillons ou retenez la pointe en chargeant, puis relâchez pour lui retourner son arme. |
-| **Nova — 3 000 m** | Duc de l'écho. Ses impulsions reprennent la fréquence de votre dernière attaque : reconnaissez-la, sélectionnez la même et **parez l'écho**. |
+| **Nova — 3 000 m** | Duc de l'écho. Son feu bleu forme des fragments et des impulsions qui reprennent la fréquence de votre dernière attaque. Reconnaissez la fréquence, sélectionnez la même et **parez l'écho** ; sa seconde volée couvre plusieurs voies. |
 | **Cadence — 4 000 m** | Souveraine de la mesure. Lisez le rythme, choisissez LOW ou HIGH selon la phase et **relâchez sur le flash** pour ouvrir une fenêtre d'attaque. |
 
 Pour s'entraîner, le menu propose **Practice a Ruler**. La **démo autonome** (`?demo=1`) joue seule et explique les mécaniques en français : pratique pour découvrir le projet ou préparer une présentation.

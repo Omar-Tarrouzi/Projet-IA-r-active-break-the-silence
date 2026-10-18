@@ -156,8 +156,16 @@ class SwarmPoint extends Vehicle {
     const color = this.chainIndex!=null&&this.boss?.profile?.key==='ONYX' ? '#ff315c' :
       this.state==='STUNNED' ? '#55627a' :
       this.state==='FLOCK' ? '#a9c4ff' : (TUNINGS[this.resonance] || TUNINGS.HIGH).color;
-    c.fillStyle=color;
-    c.beginPath(); c.arc(this.pos.x,this.pos.y,this.r,0,Math.PI*2); c.fill();
+    const visual=typeof attackVisual==='function'?attackVisual(this):null;
+    if(visual && typeof attackAtlas!=='undefined' && attackAtlas){
+      const missileHead=this.missileIndex!=null&&this.missileSlot===0;
+      const angle=this.vel.mag()>.2?Math.atan2(this.vel.y,this.vel.x)+Math.PI/2:0;
+      attackAtlas.draw(c,visual.kind,visual.state,this.pos.x,this.pos.y,
+        visual.kind==='vesperTip'?24:missileHead?22:this.chainIndex!=null?15:12,angle,this.boss?.phaseTimer||0);
+    }else{
+      c.fillStyle=color;
+      c.beginPath(); c.arc(this.pos.x,this.pos.y,this.r,0,Math.PI*2); c.fill();
+    }
     if(this.boss && this.dangerous) {
       c.fillStyle='#f5eaff'; c.fillRect(this.pos.x-1,this.pos.y-1,2,2);
     }
