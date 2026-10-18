@@ -37,7 +37,7 @@
         <p id="screen-copy">A forbidden song opened the sky. Four rulers took its player. His guitar followed.</p>
         <button id="play" class="primary">BEGIN ASCENT <span>↗</span></button><button id="demo" class="secondary demo-start">REGARDER LA DÉMO AUTONOME <span>▶</span></button>
         <details class="practice-menu"><summary>PRACTICE A RULER · SPOILERS</summary><label class="boss-chooser">CHOOSE A RULER <select id="boss-select"><option value="HUSH">VESPER · 1000 M</option><option value="MUTE">HARM ONYX · 2000 M</option><option value="ECHO">NOVA · 3000 M</option><option value="MEASURE">CADENCE · 4000 M</option></select></label>
-        <button id="duel" class="secondary">CHALLENGE RULER <span>↗</span></button><button id="demo-boss" class="secondary">DÉMO AUTO : CE SOUVERAIN <span>▶</span></button></details>
+        <button id="preview-transformation" class="secondary">VOIR LA TRANSFORMATION <span>✦</span></button><button id="duel" class="secondary">CHALLENGE RULER <span>↗</span></button><button id="demo-boss" class="secondary">DÉMO AUTO : CE SOUVERAIN <span>▶</span></button></details>
         <details class="sound-tutorial"><summary>COMMENT COMMANDER LA GUITARE PAR LE SON ?</summary><div class="sound-tutorial-grid"><div><span class="tutorial-glyph tutorial-clap" aria-hidden="true">◉</span><b>CLAQUEMENT</b><small>Bref → attaque MID en cône</small></div><div><span class="tutorial-glyph tutorial-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>SON TENU</b><small>Chanter ou faire du bruit → charge HIGH</small></div><div><span class="tutorial-glyph tutorial-pointer" aria-hidden="true">↗</span><b>SANS MICRO</b><small>Déplacer, maintenir, relâcher</small></div></div><p>Micro facultatif · activer à droite. La démo simule les mêmes actions sans écouter votre micro.</p></details><p class="screen-hint"><span class="desktop-hint">MOVE THE MOUSE · HOLD CLICK · RELEASE TO SHATTER</span><span class="touch-hint">DRAG TO MOVE · HOLD THE ARENA · RELEASE TO BLAST</span></p></div>
       </div>
       <div class="arena-bottom"><span id="combo">BREAK THE SILENCE</span><span>◆ <span id="harmony">1</span> HARMONY</span></div>
@@ -117,6 +117,7 @@
   <script src="systems/BossController.js"></script>
   <script src="systems/RulerBossController.js"></script>
   <script src="systems/OpeningScene.js"></script>
+  <script src="systems/TransformationScene.js"></script>
   <script src="systems/FixedStep.js"></script>
   <script src="systems/Director.js"></script>
 
