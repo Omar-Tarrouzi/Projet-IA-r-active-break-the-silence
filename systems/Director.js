@@ -50,10 +50,10 @@ class Director {
     // Check regular wave spawns
     this.waveTimer -= dt;
     if (this.waveTimer <= 0 && this.formations.length < this.currentBand.maxFormations && !this.bossActive) {
-      // Do not layer a fresh formation over a live warning or strike.
-      if(this.formations.some(f=>!f.isBoss&&['TELEGRAPH','STRIKE'].includes(f.phase))){this.waveTimer=.8;return;}
+      // Keep one readable target lock at a time, but let attacks overlap after it.
+      if(this.formations.some(f=>!f.isBoss&&f.phase==='TELEGRAPH')){this.waveTimer=.45;return;}
       this.spawnWave(shaft, font);
-      this.waveTimer = 2.3 + this.random() * 1.3;
+      this.waveTimer = this.currentBand.maxFormations>1?1.8+this.random()*.9:2.3+this.random()*1.3;
     }
   }
 
@@ -88,9 +88,9 @@ class Director {
     controller.initialPointCount=controller.points.length;
     if(controller.points.length) this.formations.push(controller);
 
-    // 35% chance to drop a pickup when a wave starts
-    if (this.random() < 0.35 && this.pickups.length < 3) {
-      this.spawnPickup(shaft);
+    // More frequent nearby energy creates decisions under overlapping attacks.
+    if (this.random() < 0.62 && this.pickups.length < 4) {
+      this.spawnPickup(shaft,this.random()<.65?'VOLUME':null);
     }
   }
 
@@ -117,7 +117,7 @@ class Director {
     // Guaranteed Harmonize pickup on formation clear
     if(scoreManager.harmonizeCharges<scoreManager.maxHarmonize)this.spawnPickup(shaft, 'HARMONIZE');
     else if(scoreManager.tune<90)this.spawnPickup(shaft,'TUNE');
-    else if(scoreManager.volume<75)this.spawnPickup(shaft,'VOLUME');
+    else if(scoreManager.volume<90)this.spawnPickup(shaft,'VOLUME');
 
     // Trigger rest window so player catches breath
     this.restTimer = this.currentBand.restWindow;
@@ -125,9 +125,9 @@ class Director {
   }
 
   spawnPickup(shaft, type = null) {
-    const pType = type || (this.random() < 0.75 ? 'HARMONIZE' : 'REST');
+    const pType = type || (this.random() < 0.55 ? 'VOLUME' : this.random()<.72?'HARMONIZE':'REST');
     const px = shaft.x + shaft.width * (0.2 + this.random() * 0.6);
-    const py = shaft.y - 20;
+    const py = shaft.y + shaft.height * (0.36 + this.random() * 0.16);
 
     const pickup = new Pickup(px, py, pType);
     this.pickups.push(pickup);

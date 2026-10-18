@@ -16,6 +16,7 @@ class RulerBossController {
     this.chainDarts=[];this.chainBreaks=[0,0];this.echoes=[];this.echoTune='HIGH';
     this.echoLaunches=0;this.beatClock=0;this.lastCounterBeat=-1;this.staggerTimer=0;
     this.counterSeen=false;this.lastAct=1;this.hitFlash=0;
+    this.regenerationReserve=192;this.regeneratedThisRecovery=false;
     for(let i=0;i<this.initialPointCount;i++){
       const angle=i*2.3999632297,r=30+i*.48;
       const p=new SwarmPoint(x+Math.cos(angle)*r,y+Math.sin(angle)*r,{x:0,y:0},this.anchor,this.profile.attackATune);
@@ -47,6 +48,20 @@ class RulerBossController {
       Math.hypot(a.pos.x-at.x,a.pos.y-at.y)-Math.hypot(b.pos.x-at.x,b.pos.y-at.y)).slice(0,Math.min(28,amount));
     for(const p of victims)this.damagePoint(p);
     return victims.length;
+  }
+  regenerate(){
+    if(this.phase!=='RECOVER'||this.regenerationReserve<=0)return 0;
+    const count=Math.min(18,this.regenerationReserve,Math.max(0,108-this.getLivePoints().length));
+    if(!count)return 0;
+    let restored=0;
+    for(const p of this.points){if(!p.isDead||p.isConverted)continue;
+      p.isDead=false;p.state='HOMED';p.stunTimer=0;p.dangerous=false;
+      p.chainIndex=null;p.chainSlot=null;
+      if(++restored===count)break;
+    }
+    this.regenerationReserve-=restored;
+    if(restored&&typeof hud!=='undefined'&&hud)hud.addPopup('SWARM REFORMS · +'+restored,this.anchor.pos.x,this.anchor.pos.y-105,this.profile.color);
+    return restored;
   }
   finishIfEmpty(){
     if(this.getLivePoints().length||this.phase==='EXPOSED'||this.phase==='DEFEAT'||this.isDead)return;
@@ -94,7 +109,7 @@ class RulerBossController {
   }
   returnChain(dart,reason){
     if(!dart||dart.isDead||dart.mode==='RETURN')return false;
-    dart.mode='RETURN';dart.tugProgress=1;this.counterSeen=true;
+    dart.mode='RETURN';dart.returnAge=0;dart.tugProgress=1;this.counterSeen=true;
     if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playCounter();
     if(typeof hud!=='undefined'&&hud)hud.addPopup(reason+' · RETURN!',dart.pos.x,dart.pos.y-42,'#ffb4c4');
     return true;
@@ -112,7 +127,12 @@ class RulerBossController {
   updateChains(dt,guitar,shaft){
     for(const dart of this.chainDarts){
       if(dart.isDead)continue;
-      if(dart.mode==='SEEK'&&dart.age>1.05)dart.mode='HOLD';
+      if(dart.mode==='SEEK'){
+        dart.target={x:guitar.pos.x,y:guitar.pos.y-42};
+        if((dart.age>1.1&&Math.hypot(dart.pos.x-dart.target.x,dart.pos.y-dart.target.y)<145)||dart.age>2.2){
+          dart.mode='HOLD';dart.target={x:dart.pos.x,y:dart.pos.y};
+        }
+      }
       const target=dart.mode==='RETURN'?this.anchor.pos:dart.target;
       dart.updateDart(dt,target);
       if(dart.mode==='HOLD'){
@@ -126,7 +146,9 @@ class RulerBossController {
         if(typeof hud!=='undefined'&&hud)hud.addPopup('DISCORD RECOILS · -'+hits,
           this.anchor.pos.x,this.anchor.pos.y-90,'#ff718f');
       }
-      if(dart.age>6||dart.pos.x<shaft.x-100||dart.pos.x>shaft.x+shaft.width+100)dart.isDead=true;
+      if(dart.mode==='RETURN')dart.returnAge=(dart.returnAge||0)+dt;
+      if((dart.mode==='RETURN'&&dart.returnAge>4)||(dart.mode!=='RETURN'&&dart.age>6)||
+        dart.pos.x<shaft.x-150||dart.pos.x>shaft.x+shaft.width+150)dart.isDead=true;
       if(dart.isDead)for(const link of this.getLivePoints())if(link.chainIndex===dart.index){link.chainIndex=null;link.chainSlot=null;}
     }
   }
@@ -211,7 +233,8 @@ class RulerBossController {
   }
   update(dt,guitar,shaft){
     if(this.isDead)return;
-    this.phaseTimer+=dt;this.staggerTimer=Math.max(0,this.staggerTimer-dt);this.hitFlash=Math.max(0,this.hitFlash-dt);
+    this.phaseTimer+=dt;this.staggerTimer=Math.max(0,this.staggerTimer-dt);
+    if(this.phase==='RECOVER'&&!this.regeneratedThisRecovery&&this.phaseTimer>=.65){this.regeneratedThisRecovery=true;this.regenerate();}this.hitFlash=Math.max(0,this.hitFlash-dt);
     const act=this.getAct();if(act>this.lastAct){this.lastAct=act;this.staggerTimer=Math.max(this.staggerTimer,.7);
       if(typeof hud!=='undefined'&&hud)hud.addPopup('ACT '+(act===2?'II':'III')+' · THE FORM FRACTURES',
         this.anchor.pos.x,this.anchor.pos.y-115,this.profile.color);
@@ -235,7 +258,7 @@ class RulerBossController {
       if(previous==='ENTRANCE')this.phase='A_WARN';
       else if(previous==='A_WARN')this.phase='A';
       else if(previous==='B_WARN')this.phase='B';
-      else if(previous==='A'||previous==='B'){this.phase='RECOVER';this.nextAttack=previous==='A'?'B_WARN':'A_WARN';}
+      else if(previous==='A'||previous==='B'){this.phase='RECOVER';this.regeneratedThisRecovery=false;this.nextAttack=previous==='A'?'B_WARN':'A_WARN';}
       else this.phase=this.nextAttack;
       if(this.phase.endsWith('_WARN')){
         if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playWarning(this.profile.key);

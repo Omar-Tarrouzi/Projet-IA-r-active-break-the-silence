@@ -8,7 +8,7 @@ class BossController {
     this.shapeDef={contactDamage:10,resonance:'HIGH'};
     this.isDead=false;this.isCleared=false;this.tookDamage=false;this.defeatTimer=0;this.coreHits=0;this.coreDangerous=false;this.coreContactUsed=false;this.coreAim={x,y};this.coreHitCycle=-1;this.coreVulnerable=false;
     this.cycle=0;this.firstRingGrace=true;this.hitFlash=0;this.ringClock=0;this.aimAngle=Math.PI/2;
-    this.regenerationReserve=VESPER.regenerationReserve;this.regeneratedThisRecall=false;this.recallInterrupted=false;this.regenerationFlash=0;
+    this.regenerationReserve=VESPER.regenerationReserve;this.regeneratedThisRecall=false;this.regeneratedThisEdge=false;this.recallInterrupted=false;this.regenerationFlash=0;
     this.focus={x,y};this.wordCenter={x,y:y+270};this.aim={x,y:y+500};this.missileCount=VESPER.missileCount;this.missiles=[];this.wordCycle=0;this.currentAttackWord='CHUT';
     // Glyph geometry is computed once. Recall can restore a bounded number of missing slots.
     this.introWord=generateProceduralWordPoints('VESPER',VESPER.particles);
@@ -47,9 +47,9 @@ class BossController {
     p.isDead=true;this.tookDamage=true;this.finishIfEmpty();return true;
   }
   regenerate(){
-    if(this.regenerationReserve<=0||this.phase!=='RECALL'||this.recallInterrupted)return 0;
+    if(this.regenerationReserve<=0||!['RECALL','EDGE'].includes(this.phase)||(this.phase==='RECALL'&&this.recallInterrupted))return 0;
     const live=this.getLivePoints().length;
-    const count=Math.min(VESPER.regenerationBatch,this.regenerationReserve,Math.max(0,VESPER.regenerationCeiling-live));
+    const count=Math.min(this.phase==='EDGE'?22:VESPER.regenerationBatch,this.regenerationReserve,Math.max(0,VESPER.regenerationCeiling-live));
     if(!count)return 0;
     let restored=0;
     for(const p of this.points){
@@ -164,6 +164,7 @@ class BossController {
     if(!live.length&&this.phase!=='EXPOSED'){this.finishIfEmpty();return;}
     this.phaseTimer+=dt;this.hitFlash=Math.max(0,this.hitFlash-dt);this.regenerationFlash=Math.max(0,this.regenerationFlash-dt);
     if(this.phase==='RECALL'&&!this.regeneratedThisRecall&&this.phaseTimer>=.9){this.regeneratedThisRecall=true;this.regenerate();}
+    if(this.phase==='EDGE'&&!this.regeneratedThisEdge&&this.phaseTimer>=.8){this.regeneratedThisEdge=true;this.regenerate();}
     if(this.phase==='ORBIT')this.ringClock+=dt;
     if(this.phase==='EXPOSED'){
       const a=this.anchor,beat=this.phaseTimer%3.2;
@@ -187,7 +188,7 @@ class BossController {
           y:Math.min(shaft.y+shaft.height-220,Math.max(shaft.y+400,guitar.pos.y-40))};
         this.ringClock=0;
       }
-      if(this.phase==='EDGE')this.cycle++;
+      if(this.phase==='EDGE'){this.cycle++;this.regeneratedThisEdge=false;}
       if(this.phase==='SPEAR_WARN'){this.aim={x:guitar.pos.x,y:guitar.pos.y};
         this.aimAngle=Math.atan2(this.aim.y-this.anchor.pos.y,this.aim.x-this.anchor.pos.x);}
       if(this.phase==='MISSILE')this.launchMissiles();
@@ -279,13 +280,18 @@ class BossController {
       if(this.phase==='SPEAR_WARN'){c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);
         c.lineTo(this.aim.x+Math.cos(this.aimAngle)*420,this.aim.y+Math.sin(this.aimAngle)*420);c.stroke();}
       else if(this.phase==='ORBIT_WARN'||this.phase==='ORBIT'){
-        const gapCenter=Math.PI/2+(this.phase==='ORBIT'?this.ringClock*VESPER.ringSpeed:0);
-        for(const r of VESPER.ringRadii){c.beginPath();c.arc(this.focus.x,this.focus.y,r,
-          gapCenter+VESPER.ringGap/2,gapCenter+Math.PI*2-VESPER.ringGap/2);c.stroke();}
-        c.setLineDash([]);c.strokeStyle='#5beac6';c.lineWidth=2;
-        for(const side of [-1,1]){const angle=gapCenter+side*VESPER.ringGap/2;
-          c.beginPath();c.moveTo(this.focus.x+Math.cos(angle)*95,this.focus.y+Math.sin(angle)*95);
-          c.lineTo(this.focus.x+Math.cos(angle)*245,this.focus.y+Math.sin(angle)*245);c.stroke();}
+        for(let ring=0;ring<VESPER.ringRadii.length;ring++){
+          const gapCenter=Math.PI/2+(this.phase==='ORBIT'?this.ringClock*VESPER.ringSpeeds[ring]:0);
+          const r=VESPER.ringRadii[ring];
+          c.beginPath();c.arc(this.focus.x,this.focus.y,r,
+            gapCenter+VESPER.ringGap/2,gapCenter+Math.PI*2-VESPER.ringGap/2);c.stroke();
+          c.setLineDash([]);c.strokeStyle='#5beac6';c.lineWidth=2;
+          for(const side of [-1,1]){const angle=gapCenter+side*VESPER.ringGap/2;
+            c.beginPath();c.moveTo(this.focus.x+Math.cos(angle)*(r-9),this.focus.y+Math.sin(angle)*(r-9));
+            c.lineTo(this.focus.x+Math.cos(angle)*(r+9),this.focus.y+Math.sin(angle)*(r+9));c.stroke();}
+          c.setLineDash([5,9]);c.strokeStyle='#e4be78';c.lineWidth=1;
+        }
+        c.setLineDash([]);
       }else if(this.phase==='HAND_WARN'){c.beginPath();c.arc(this.focus.x,this.focus.y,90,0,Math.PI*2);c.stroke();}
       else if(this.phase==='MISSILE_WARN'){for(let i=0;i<4;i++){
         c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);

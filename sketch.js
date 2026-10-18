@@ -389,7 +389,7 @@ function updateGame(dt) {
 
   // Pickups update & contact check
   director.pickups.forEach(p => {
-    p.updateDrift(dt, shaft);
+    p.updateDrift(dt, shaft, guitar);
     p.update();
 
     if (!p.isDead && p5.Vector.dist(p.pos, guitar.pos) < p.r + guitar.r) {

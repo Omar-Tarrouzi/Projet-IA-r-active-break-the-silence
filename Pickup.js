@@ -8,12 +8,12 @@ class Pickup extends Vehicle {
     this.maxSpeed = 2.2;
     this.maxForce = 0.15;
     this.r = 14;
-    this.lifeTime = 12.0;
+    this.lifeTime = 16.0;
     this.isDead = false;
 
   }
 
-  updateDrift(dt, shaft) {
+  updateDrift(dt, shaft, guitar=null) {
     this.lifeTime -= dt;
     if (this.lifeTime <= 0 || this.pos.y > shaft.y + shaft.height + 30) {
       this.isDead = true;
@@ -22,14 +22,15 @@ class Pickup extends Vehicle {
 
     // Wander gently while drifting downwards
     const wanderF = this.wander();
-    if (wanderF) {
-      wanderF.mult(0.5);
-      this.applyForce(wanderF);
+    if(guitar&&Math.hypot(guitar.pos.x-this.pos.x,guitar.pos.y-this.pos.y)<230){
+      this.maxSpeed=6;this.maxForce=.42;
+      this.applyForce(pickupMagnetForce(this,guitar));
+    }else{
+      this.maxSpeed=2.2;this.maxForce=.15;
+      if(wanderF){wanderF.mult(.5);this.applyForce(wanderF);}
+      const f=velocityForce(this.vel,{x:0,y:1.2},this.maxForce*.5);
+      this.applyForce(createVector(f.x,f.y));
     }
-
-    // Gentle downward bias
-    const f = velocityForce(this.vel, {x:0,y:1.2}, this.maxForce*0.5);
-    this.applyForce(createVector(f.x,f.y));
   }
 
   show() {

@@ -15,7 +15,7 @@ const BANDS = [
     name: 'Studio',
     minAlt: 500,
     maxAlt: 1200,
-    maxFormations: 1,
+    maxFormations: 2,
     climbSpeed: 13.0,
     shapes: ['ARROW', 'HAMMER', 'SCISSORS', 'AXE', 'PINCER', 'HAND', 'MURMURATION'],
     smartSwarms: false,

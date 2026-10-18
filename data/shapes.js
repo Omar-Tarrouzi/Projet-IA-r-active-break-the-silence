@@ -99,7 +99,8 @@ function generateHandPoints(count = 110) {
       const t = (i + 1) / (baseCount + 1);
       points.push({
         x: fx + (f - 2) * 0.06 * t,
-        y: 0.05 - t * flen
+        y: 0.05 - t * flen,
+        finger: f, reach: t
       });
     }
   }
@@ -357,6 +358,13 @@ function generateScissorsPoints(count=140) {
   return points;
 }
 function articulatedSlot(shape,offset,progress) {
+  if(shape==='HAND'){
+    const curl=Math.max(0,Math.min(1,progress));
+    if(offset.finger===undefined)return {x:offset.x,y:offset.y};
+    const side=offset.finger-2;
+    return {x:offset.x-side*offset.reach*curl*.11,
+      y:offset.y+offset.reach*offset.reach*curl*(offset.finger===2?.34:.43)};
+  }
   if(shape!=='SCISSORS')return {x:offset.x,y:offset.y};
   const a=offset.jaw*(.72-.65*Math.max(0,Math.min(1,progress)));
   return {x:offset.x*Math.cos(a)-offset.y*Math.sin(a),y:offset.x*Math.sin(a)+offset.y*Math.cos(a)};
