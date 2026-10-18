@@ -13,6 +13,8 @@ class Guitar extends Vehicle {
     this.maxChargeTime = 1.0;
     this.chargeAuraRadius = 0;
     this.wobblePhase = 0;
+    this.collectPulse = 0;
+    this.collectColor = '#82f5d4';
 
     // Sonic Dash / String Bend
     this.dashCooldown = 0;
@@ -59,6 +61,7 @@ class Guitar extends Vehicle {
   }
 
   update(dt = 0.016, shaft = null) {
+    this.collectPulse = Math.max(0,this.collectPulse-dt*2.8);
     if (this.dashCooldown > 0) {
       this.dashCooldown = Math.max(0, this.dashCooldown - dt);
     }
@@ -118,6 +121,11 @@ class Guitar extends Vehicle {
       c.arc(0,0,49,-Math.PI/2,-Math.PI/2+Math.PI*2*this.chargeDuration/this.maxChargeTime);c.stroke();
     }
     if(this.dashTimer>0){c.strokeStyle='#8fffe5';c.lineWidth=1;c.beginPath();c.ellipse(0,8,43,55,0,0,Math.PI*2);c.stroke();}
+    if(this.collectPulse>0){
+      c.globalAlpha=this.collectPulse*.8;c.strokeStyle=this.collectColor;c.lineWidth=3*this.collectPulse;
+      c.beginPath();c.arc(0,0,29+(1-this.collectPulse)*46,0,Math.PI*2);c.stroke();
+      c.globalAlpha=this.collectPulse*.23;c.fillStyle=this.collectColor;c.beginPath();c.arc(0,0,33,0,Math.PI*2);c.fill();
+    }
     c.restore();
   }
 }

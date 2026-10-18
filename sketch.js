@@ -202,7 +202,7 @@ function draw() {
   if(introCamera.scale>1){translate(400,340);scale(introCamera.scale);translate(-introCamera.x,-introCamera.y);}
   for(const mote of spaceMotes)mote.show();
   drawingContext.save();drawingContext.globalAlpha=.25;for(const relic of roomRelics)relic.show();drawingContext.restore();
-  director.pickups.forEach(p=>p.show());
+  director.pickups.forEach(p=>p.show(guitar));
   director.formations.forEach(f=>f.show());
   alliedNotes.forEach(n=>n.show()); shockwaves.forEach(sw=>sw.show());
   hitParticles.forEach(p=>p.show());
@@ -321,7 +321,7 @@ function updateGame(dt) {
   });
 
   // Director wave pacing
-  director.update(dt, scoreManager, shaft, font);
+  director.update(dt, scoreManager, shaft, font, !!demoPilot);
 
   // Formations update
   director.formations.forEach(form => {
@@ -395,8 +395,10 @@ function updateGame(dt) {
     if (!p.isDead && p5.Vector.dist(p.pos, guitar.pos) < p.r + guitar.r) {
       p.isDead = true;
       const energy=scoreManager.onPickupCollected();
-      spawnSparks(p.pos.x,p.pos.y,p.type==='TUNE'?'#ff8aa6':'#82f5d4',14);
-      screenShake=Math.max(screenShake,2);
+      const pickupColor=p.type==='TUNE'?'#ff8aa6':p.type==='VOLUME'?'#82f5d4':'#ffd166';
+      spawnSparks(p.pos.x,p.pos.y,pickupColor,24);
+      guitar.collectPulse=1;guitar.collectColor=pickupColor;
+      screenShake=Math.max(screenShake,3);
       hud.addPopup('ENERGY x'+energy.chain+' · +'+energy.bonus,guitar.pos.x,guitar.pos.y-58,'#ffe3a1');
       audioSynth.playCue(460+energy.chain*90,700+energy.chain*110,.16,.085);
       if (p.type === 'HARMONIZE') {

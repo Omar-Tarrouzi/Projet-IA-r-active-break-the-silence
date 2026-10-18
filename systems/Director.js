@@ -19,6 +19,7 @@ class Director {
     };
     this.bossActive = false;
     this.restTimer = 0;
+    this.demoEncountersSinceBoss = 0;
   }
 
   // Linear Congruential Generator for deterministic seeded runs
@@ -27,7 +28,7 @@ class Director {
     return this.seed / 233280;
   }
 
-  update(dt, scoreManager, shaft, font) {
+  update(dt, scoreManager, shaft, font, demoMode = false) {
     this.currentBand = getBandForAltitude(scoreManager.altitude);
 
     // Filter out dead formations
@@ -43,7 +44,7 @@ class Director {
     // Pending milestones cannot be skipped by climbing into the next band.
     const alt = scoreManager.altitude;
     const pending = BANDS.find(b => b.bossWord && alt >= b.bossAlt && !this.bossDefeated[b.bossWord]);
-    if(pending && !this.bossActive) {
+    if(pending && !this.bossActive && (!demoMode || this.demoEncountersSinceBoss >= 3)) {
       if(this.formations.length===0) this.spawnBoss(pending.bossWord,shaft,font);
       return;
     }
@@ -53,13 +54,13 @@ class Director {
     if (this.waveTimer <= 0 && activeRegular.length < this.currentBand.maxFormations && !this.bossActive) {
       // Keep one readable target lock at a time, but let attacks overlap after it.
       if(this.formations.some(f=>!f.isBoss&&f.phase==='TELEGRAPH')){this.waveTimer=.45;return;}
-      this.spawnWave(shaft, font);
+      this.spawnWave(shaft, font, scoreManager);
       this.waveTimer = this.currentBand.minAlt>=500&&this.formations.length===1?.8:
         this.currentBand.maxFormations>1?1.8+this.random()*.9:2.3+this.random()*1.3;
     }
   }
 
-  spawnWave(shaft, font) {
+  spawnWave(shaft, font, scoreManager = null) {
     const shapePool = this.currentBand.shapes;
     if(this.deckBand!==this.currentBand.name){this.shapeDeck=[];this.deckBand=this.currentBand.name;}
     // A seeded shuffle bag shows the full active vocabulary before repeats.
@@ -89,16 +90,22 @@ class Director {
     const existing = this.formations.reduce((n,f)=>n+f.getLivePoints().length,0);
     controller.points = controller.points.slice(0,Math.max(0,500-existing));
     controller.initialPointCount=controller.points.length;
-    if(controller.points.length) this.formations.push(controller);
+    if(controller.points.length) {
+      this.formations.push(controller);
+      this.demoEncountersSinceBoss++;
+    }
 
     // More frequent nearby energy creates decisions under overlapping attacks.
-    if (this.random() < 0.62 && this.pickups.length < 4) {
-      this.spawnPickup(shaft,this.random()<.65?'VOLUME':null);
+    if (this.random() < 0.85 && this.pickups.length < 5) {
+      const needHealth=scoreManager && scoreManager.tune<70;
+      const needEnergy=scoreManager && scoreManager.volume<70;
+      this.spawnPickup(shaft,needHealth?'TUNE':needEnergy?'VOLUME':null);
     }
   }
 
   spawnBoss(bossWord, shaft, font) {
     this.bossActive = true;
+    this.demoEncountersSinceBoss = 0;
     const spawnX = shaft.x + shaft.width * 0.5;
     const spawnY = shaft.y - 120;
 
@@ -119,7 +126,8 @@ class Director {
     scoreManager.onFormationCleared(controller.tookDamage,controller.isBoss);
 
     // Guaranteed Harmonize pickup on formation clear
-    if(scoreManager.harmonizeCharges<scoreManager.maxHarmonize)this.spawnPickup(shaft, 'HARMONIZE');
+    if(scoreManager.tune<75)this.spawnPickup(shaft,'TUNE');
+    else if(scoreManager.harmonizeCharges<scoreManager.maxHarmonize)this.spawnPickup(shaft, 'HARMONIZE');
     else if(scoreManager.tune<90)this.spawnPickup(shaft,'TUNE');
     else if(scoreManager.volume<90)this.spawnPickup(shaft,'VOLUME');
 
@@ -129,7 +137,8 @@ class Director {
   }
 
   spawnPickup(shaft, type = null) {
-    const pType = type || (this.random() < 0.55 ? 'VOLUME' : this.random()<.72?'HARMONIZE':'REST');
+    const roll=this.random();
+    const pType = type || (roll < .48 ? 'VOLUME' : roll < .72 ? 'TUNE' : roll < .91 ? 'HARMONIZE' : 'REST');
     const px = shaft.x + shaft.width * (0.2 + this.random() * 0.6);
     const py = shaft.y + shaft.height * (0.36 + this.random() * 0.16);
 
