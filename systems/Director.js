@@ -53,7 +53,8 @@ class Director {
       // Keep one readable target lock at a time, but let attacks overlap after it.
       if(this.formations.some(f=>!f.isBoss&&f.phase==='TELEGRAPH')){this.waveTimer=.45;return;}
       this.spawnWave(shaft, font);
-      this.waveTimer = this.currentBand.maxFormations>1?1.8+this.random()*.9:2.3+this.random()*1.3;
+      this.waveTimer = this.currentBand.minAlt>=1200&&this.formations.length===1?.72:
+        this.currentBand.maxFormations>1?1.8+this.random()*.9:2.3+this.random()*1.3;
     }
   }
 
@@ -80,6 +81,7 @@ class Director {
 
     const controller = new FormationController(shapeKey, spawnX, spawnY, {
       repeats: Math.floor(1 + this.random() * 2),
+      paired: this.currentBand.minAlt>=1200&&this.formations.some(f=>f.phase==='FORMING'),
       font: font, rng: () => this.random()
     });
 

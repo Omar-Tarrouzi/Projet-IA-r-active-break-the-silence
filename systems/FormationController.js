@@ -16,6 +16,7 @@ class FormationController {
     this.weakLetterIdx = options.weakLetterIdx !== undefined ? options.weakLetterIdx : 0;
     this.tookDamage = false;
     this.warningTarget=null;
+    this.paired=!!options.paired;
 
     // Dual-entity / Pincer support
 // Dual-entity support (PINCER and MURMURATION flanking)
@@ -131,7 +132,7 @@ class FormationController {
       return;
     }
 
-    if(this.shapeKey==='SCISSORS'){
+    if(this.shapeKey==='SCISSORS'||this.shapeKey==='HAND'){
       const closure=this.phase==='STRIKE'?Math.min(1,this.phaseTimer/0.8):0;
       for(const p of this.points){
         const slot=articulatedSlot(this.shapeKey,p.offset,closure);
@@ -154,7 +155,7 @@ class FormationController {
         break;
 
       case 'TELEGRAPH':
-        const lockAt=['HAMMER','SCISSORS'].includes(this.shapeKey)?1.2:.55;
+        const lockAt=['HAMMER','SCISSORS'].includes(this.shapeKey)?(this.paired?.65:1.2):.55;
         if(!this.warningTarget||this.phaseTimer<lockAt)this.warningTarget={x:guitar.pos.x,y:guitar.pos.y};
         const warning=this.warningTarget;
         // Distinct readable wind-ups
@@ -201,7 +202,7 @@ class FormationController {
 
         this.anchor.update();
 
-        if (this.phaseTimer >= (["HAMMER","SCISSORS"].includes(this.shapeKey)?2:1)) {
+        if (this.phaseTimer >= (["HAMMER","SCISSORS"].includes(this.shapeKey)?(this.paired?1.0:2):1)) {
           this.phase = 'STRIKE';
           this.phaseTimer = 0;
           if (this.shapeKey === 'MURMURATION') for(const p of this.getLivePoints()) if(p.state==='HOMED')p.state='FLOCK';
