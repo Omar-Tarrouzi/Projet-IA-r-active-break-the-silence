@@ -18,6 +18,7 @@ class FormationController {
     this.warningTarget=null;
     this.paired=!!options.paired;
     this.redirected=false;this.redirectCue=false;this.redirectTarget=null;
+    this.encoreUsed=false;
 
     // Dual-entity / Pincer support
 // Dual-entity support (PINCER and MURMURATION flanking)
@@ -222,20 +223,20 @@ class FormationController {
           this.anchor.update();
         }
         if (this.shapeKey === 'ARROW') {
-          // One readable correction after the player dodges the first committed line.
+          // A dodged cursor keeps its momentum, then bends toward the guitar.
           if(!this.redirected&&this.warningTarget&&this.phaseTimer>=.42&&
             Math.hypot(guitar.pos.x-this.warningTarget.x,guitar.pos.y-this.warningTarget.y)>65){
             this.redirected=true;this.redirectCue=true;
+            this.anchor.lockedVelocity=null;
+          }
+          if(this.redirected){
             this.redirectTarget={x:guitar.pos.x,y:guitar.pos.y};
-            this.anchor.unlockStrike();
-          }
-          if(this.redirectCue&&this.phaseTimer>=.68){
-            this.redirectCue=false;
-            this.anchor.lockStrikeVelocity(createVector(this.redirectTarget.x,this.redirectTarget.y),10);
-          }
-          if(this.redirectCue){
-            const brake=velocityForce(this.anchor.vel,{x:0,y:0},this.anchor.maxForce);
-            this.anchor.applyForce(createVector(brake.x,brake.y));
+            const steer=redirectPursuitForce(this.anchor,guitar.pos);
+            this.anchor.applyForce(createVector(steer.x,steer.y));
+            const desired=Math.atan2(guitar.pos.y-this.anchor.pos.y,guitar.pos.x-this.anchor.pos.x)-Math.PI/2;
+            const delta=Math.atan2(Math.sin(desired-this.anchor.currentAngle),Math.cos(desired-this.anchor.currentAngle));
+            this.anchor.currentAngle+=Math.max(-.12,Math.min(.12,delta));
+            this.redirectCue=this.phaseTimer<.85;
           }else if(this.anchor.lockedVelocity){
             const strikeForce=velocityForce(this.anchor.vel,this.anchor.lockedVelocity,this.anchor.maxForce);
             this.anchor.applyForce(createVector(strikeForce.x,strikeForce.y));
@@ -304,6 +305,9 @@ class FormationController {
           if (this.repeats > 0) {
             this.phase = 'TELEGRAPH';
             this.phaseTimer = 0;this.warningTarget=null;
+          } else if(!this.isBoss&&!this.encoreUsed){
+            this.encoreUsed=true;this.phase='ENCORE_WARN';this.phaseTimer=0;
+            if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playWarning(this.shapeKey);
           } else {
             this.phase = 'EXIT';
             this.phaseTimer = 0;
@@ -311,6 +315,23 @@ class FormationController {
         }
         break;
 
+      case 'ENCORE_WARN': {
+        this.warningTarget={x:guitar.pos.x,y:guitar.pos.y};
+        const target=createVector(guitar.pos.x,guitar.pos.y-115);
+        this.anchor.applyForce(this.anchor.arrive(target));this.anchor.update();
+        if(this.phaseTimer>=.8){this.phase='ENCORE';this.phaseTimer=0;}
+        break;
+      }
+      case 'ENCORE': {
+        this.anchor.maxSpeed=5.8;this.anchor.maxForce=.32;
+        const force=redirectPursuitForce(this.anchor,guitar.pos,.32);
+        this.anchor.applyForce(createVector(force.x,force.y));this.anchor.update();
+        const desired=Math.atan2(guitar.pos.y-this.anchor.pos.y,guitar.pos.x-this.anchor.pos.x)-Math.PI/2;
+        const delta=Math.atan2(Math.sin(desired-this.anchor.currentAngle),Math.cos(desired-this.anchor.currentAngle));
+        this.anchor.currentAngle+=Math.max(-.09,Math.min(.09,delta));
+        if(this.phaseTimer>=1.6){this.anchor.maxSpeed=3.5;this.anchor.maxForce=.25;this.phase='EXIT';this.phaseTimer=0;}
+        break;
+      }
       case 'EXIT':
         // Leaves screen using seek
         const exitPos = createVector(shaft.x + shaft.width * 0.5, shaft.y - 150);
@@ -443,10 +464,30 @@ class FormationController {
           if (this.repeats > 0) {
             this.phase = 'TELEGRAPH';
             this.phaseTimer = 0;this.warningTarget=null;
+          } else if(!this.encoreUsed){
+            this.encoreUsed=true;this.phase='ENCORE_WARN';this.phaseTimer=0;
+            if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playWarning(this.shapeKey);
           } else {
             this.phase = 'EXIT';
             this.phaseTimer = 0;
           }
+        }
+        break;
+      }
+
+      case 'ENCORE_WARN':
+      case 'ENCORE': {
+        this.warningTarget={x:guitar.pos.x,y:guitar.pos.y};
+        const attacking=this.phase==='ENCORE';
+        for(const anchor of [this.anchorLeft,this.anchorRight]){
+          const target=attacking?guitar.pos:{x:guitar.pos.x+(anchor===this.anchorLeft?-85:85),y:guitar.pos.y-90};
+          anchor.maxSpeed=attacking?5.5:3.5;anchor.maxForce=.32;
+          const f=redirectPursuitForce(anchor,target,.32);
+          anchor.applyForce(createVector(f.x,f.y));anchor.update();
+        }
+        if(this.phaseTimer>=(attacking?1.5:.8)){
+          this.phase=attacking?'EXIT':'ENCORE';this.phaseTimer=0;
+          if(attacking)for(const anchor of [this.anchorLeft,this.anchorRight]){anchor.maxSpeed=3.5;anchor.maxForce=.25;}
         }
         break;
       }
@@ -498,21 +539,21 @@ class FormationController {
   }
 
   show() {
-    if(this.phase==='TELEGRAPH'&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION'].includes(this.shapeKey)){
+    if((this.phase==='TELEGRAPH'||this.phase==='ENCORE_WARN')&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION'].includes(this.shapeKey)){
       const c=drawingContext,t=this.phaseTimer,w=this.warningTarget;
       c.save();c.globalAlpha=.28+.28*Math.sin(t*12)**2;c.strokeStyle='#ffd4a5';c.lineWidth=2;c.setLineDash([8,7]);
       c.beginPath();c.arc(w.x,w.y,38+Math.sin(t*9)*6,0,Math.PI*2);c.stroke();
       c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);c.lineTo(w.x,w.y);c.stroke();
       c.setLineDash([]);c.fillStyle='#fff0d4';c.font='bold 12px monospace';c.textAlign='center';
-      c.fillText(this.shapeKey+' / WIND-UP',w.x,w.y-53);c.restore();
+      c.fillText(this.phase==='ENCORE_WARN'?'FINAL PASS · BREAK IT':this.shapeKey+' / WIND-UP',w.x,w.y-53);c.restore();
     }
-    if(this.shapeKey==='ARROW'&&this.redirectCue&&this.redirectTarget){
+    if(this.shapeKey==='ARROW'&&this.phase==='STRIKE'&&this.redirected&&this.redirectTarget){
       const c=drawingContext;c.save();c.strokeStyle='#ff5d72';c.lineWidth=3;
       c.globalAlpha=.55+.35*Math.sin(this.phaseTimer*36)**2;c.setLineDash([5,5]);
       c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);
-      c.lineTo(this.redirectTarget.x,this.redirectTarget.y);c.stroke();c.setLineDash([]);
+      c.quadraticCurveTo(this.anchor.pos.x+this.anchor.vel.x*12,this.anchor.pos.y+this.anchor.vel.y*12,this.redirectTarget.x,this.redirectTarget.y);c.stroke();c.setLineDash([]);
       c.fillStyle='#fff0ee';c.font='bold 13px monospace';c.textAlign='center';
-      c.fillText('REDIRECT',this.redirectTarget.x,this.redirectTarget.y-48);c.restore();
+      if(this.redirectCue)c.fillText('RE-AIM',this.redirectTarget.x,this.redirectTarget.y-48);c.restore();
     }
     if (this.isDual) {
       this.anchorLeft.show();

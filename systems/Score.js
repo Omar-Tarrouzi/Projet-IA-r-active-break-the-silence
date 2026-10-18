@@ -16,6 +16,7 @@ class ScoreManager {
     this.combo = 0;
     this.cleanStreak=0;this.lastClear=null;
     this.comboTimer = 0;
+    this.pickupChain=0;this.pickupChainTimer=0;
     this.maxComboTimer = 2.4;
     this.gameOver = false;
     this.gameWon = false;
@@ -34,6 +35,7 @@ class ScoreManager {
     this.combo = 0;
     this.cleanStreak=0;this.lastClear=null;
     this.comboTimer = 0;
+    this.pickupChain=0;this.pickupChainTimer=0;
     this.gameOver = false;
     this.gameWon = false;
     this.endlessMode = false;
@@ -70,6 +72,8 @@ class ScoreManager {
         this.combo = 0;
       }
     }
+
+    if(this.pickupChainTimer>0){this.pickupChainTimer=Math.max(0,this.pickupChainTimer-dt);if(!this.pickupChainTimer)this.pickupChain=0;}
 
     // Dissonance multiplier: rises if enemy is near (<200px), decays otherwise
     if (nearestEnemyDist !== null && nearestEnemyDist < 200) {
@@ -147,6 +151,15 @@ class ScoreManager {
     if(flourish){this.score+=250*tier;this.refundVolume(25);}
     this.lastClear={bonus:bonus+(flourish?250*tier:0),clean:!tookHit,streak:this.cleanStreak,flourish,isBoss};
     return bonus;
+  }
+
+  onPickupCollected(){
+    this.pickupChain=Math.min(5,this.pickupChain+1);
+    this.pickupChainTimer=7;
+    const bonus=60*this.getTier()*this.pickupChain;
+    this.score+=bonus;
+    this.refundVolume(4+this.pickupChain);
+    return {chain:this.pickupChain,bonus};
   }
 
   addHarmonizeCharge() {

@@ -124,7 +124,13 @@ function drawRulerAnimation(c,body){
   const layer=rulerRenderSurface.getContext('2d');
   layer.clearRect(0,0,320,280);layer.save();layer.translate(160,140);
   layer.imageSmoothingEnabled=false;
-  drawRulerLayers(layer,img,h,pose,motion,previous&&sceneAssets[previous],blend);
+  if(key==='VESPER'){
+   // Keep Vesper's silhouette intact; moving strips made his body look severed.
+   const w=Math.min(260,h*img.width/img.height),x=-w/2,y=-h/2;
+   const old=previous&&sceneAssets[previous];
+   if(old&&blend<1){layer.globalAlpha=1-blend;layer.drawImage(old.canvas,x,y,w,h);layer.globalAlpha=blend;}
+   layer.drawImage(img.canvas,x,y,w,h);layer.globalAlpha=1;
+  }else drawRulerLayers(layer,img,h,pose,motion,previous&&sceneAssets[previous],blend);
   layer.restore();c.drawImage(rulerRenderSurface,-160,-140);c.restore();
  };
  if(key==='NOVA'&&motion===1&&['A','B','A_WARN','B_WARN'].includes(body.phase))

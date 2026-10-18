@@ -38,6 +38,9 @@ class Pickup extends Vehicle {
     const c=drawingContext;c.save();c.translate(this.pos.x,this.pos.y);
     const calm=typeof reduceMotion!=='undefined'&&reduceMotion;
     if(!calm)c.rotate(Math.sin(frameCount*.025)*.12);
+    const pulse=1+Math.sin(frameCount*.12)*.12;
+    c.strokeStyle=this.type==='TUNE'?'#ff8aa6':'#82f5d4';c.globalAlpha=.35+.25*Math.sin(frameCount*.1)**2;
+    c.lineWidth=2;c.beginPath();c.arc(0,0,20*pulse,0,Math.PI*2);c.stroke();c.globalAlpha=1;
     if(spriteAtlas){spriteAtlas.draw('glow',0,0,60,60);
       spriteAtlas.draw(this.type==='REST'?'rest':'pickup',0,0,32,32);}
     if(this.type==='TUNE'||this.type==='VOLUME'){

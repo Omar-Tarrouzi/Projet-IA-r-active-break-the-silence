@@ -352,7 +352,7 @@ function updateGame(dt) {
       pt.update();
 
       // Check contact damage with player during active attack or flock
-      if (!pt.isDead && pt.state !== 'STUNNED' && !pt.isConverted && (pt.boss ? pt.dangerous : form.phase==='STRIKE'||pt.state==='FLOCK')) {
+      if (!pt.isDead && pt.state !== 'STUNNED' && !pt.isConverted && (pt.boss ? pt.dangerous : form.phase==='STRIKE'||form.phase==='ENCORE'||pt.state==='FLOCK')) {
         const distToPlayer = p5.Vector.dist(pt.pos, guitar.pos);
         if (distToPlayer < pt.r + guitar.r) {
           // Check if player has an active Quarter shield note to absorb hit
@@ -394,6 +394,11 @@ function updateGame(dt) {
 
     if (!p.isDead && p5.Vector.dist(p.pos, guitar.pos) < p.r + guitar.r) {
       p.isDead = true;
+      const energy=scoreManager.onPickupCollected();
+      spawnSparks(p.pos.x,p.pos.y,p.type==='TUNE'?'#ff8aa6':'#82f5d4',14);
+      screenShake=Math.max(screenShake,2);
+      hud.addPopup('ENERGY x'+energy.chain+' · +'+energy.bonus,guitar.pos.x,guitar.pos.y-58,'#ffe3a1');
+      audioSynth.playCue(460+energy.chain*90,700+energy.chain*110,.16,.085);
       if (p.type === 'HARMONIZE') {
         if(scoreManager.harmonizeCharges<scoreManager.maxHarmonize){
           scoreManager.addHarmonizeCharge();
