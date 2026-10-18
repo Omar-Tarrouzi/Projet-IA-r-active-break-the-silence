@@ -50,6 +50,10 @@ function preload() {
     'prop-chair','prop-lamp','prop-page','prop-headphones','prop-amp','prop-notes'];
   for(const name of names){const key=name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());sceneAssets[key]=loadImage(base+name+(name.startsWith('nova-')?'-v3.png':'.webp'));}
   sceneAssets.room=loadImage(base+'room-rpg-no-guitar.png');
+  for(const name of ['musician-idle-ginger-game-v2','musician-play-ginger-game-v2','musician-lift-ginger-game-v2','prop-chair-clean-game-v2']){
+    const key=name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase()).replace('GameV2','');
+    sceneAssets[key]=loadImage(base+name+'.png');
+  }
 }
 
 function setup() {

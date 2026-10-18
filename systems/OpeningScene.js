@@ -4,8 +4,9 @@ class OpeningScene {
     this.mode='CINEMATIC';this.time=0;this.duration=8.4;
     this.musician=new Musician(420,425);this.musician.playing=true;
     this.guitar=new Guitar(418,354);
+    this.chair=new RoomRelic(420,360,'chair',0);
     this.relics=[
-      new RoomRelic(267,390,'chair',0),new RoomRelic(103,215,'lamp',1),
+      new RoomRelic(103,215,'lamp',1),
       new RoomRelic(212,280,'page',2),new RoomRelic(294,285,'note',3),
       ...Array.from({length:9},(_,i)=>new RoomRelic(405+i*4,350-i*3,'note',i+4))
     ];
@@ -21,6 +22,9 @@ class OpeningScene {
     this.musician.target=t<3.6?{x:420,y:425}:
       {x:420+Math.sin(t*1.7)*12,y:425-Math.max(0,t-3.6)*128};
     this.musician.updateScene(dt);
+    // The seat stays behind; the abduction gives it only a small steered recoil.
+    this.chair.target=t<3.6?this.chair.origin:{x:Math.min(434,420+(t-3.6)*11),y:360};
+    this.chair.updateRelic(dt);
     this.guitar.applyForce(this.guitar.arrive(createVector(t<4.6?447:405,t<4.6?405:680)));
     this.guitar.update(dt,{x:20,y:20,width:760,height:860});
     this.relics.forEach((p,i)=>{
@@ -42,6 +46,7 @@ class OpeningScene {
     c.save();
     if(typeof sceneAssets!=='undefined'&&sceneAssets?.room)c.drawImage(sceneAssets.room.canvas,0,0,800,900);
     else{c.fillStyle='#141b2a';c.fillRect(0,0,800,900);}
+    this.chair.show();
     if(rupture){
       c.fillStyle='#06091bcc';c.globalAlpha=rupture*.42;c.fillRect(0,0,800,900);c.globalAlpha=1;
       const beam=c.createLinearGradient(300,0,505,0);

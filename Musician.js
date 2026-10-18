@@ -26,13 +26,19 @@ class Musician extends Vehicle {
   show() {
     const c=drawingContext,t=this.age;
     if(typeof sceneAssets!=='undefined'&&sceneAssets){
-      const frame=this.abducted?'musicianLift':this.playing?'musicianPlay':
+      const frame=this.abducted?'musicianLiftGinger':this.playing?'musicianPlayGinger':
         this.walking?(this.facing==='back'?'musicianBackWalk':Math.floor(t*7)%2?'musicianWalkA':'musicianWalkB'):
-        this.facing==='back'?'musicianBack':'musicianIdle';
+        this.facing==='back'?'musicianBack':'musicianIdleGinger';
       const sprite=sceneAssets[frame];
-      if(sprite){const h=this.abducted?163:this.playing?145:104,w=h*sprite.width/sprite.height;
+      if(sprite){const h=this.abducted?163:this.playing?145:122,w=h*sprite.width/sprite.height;
         c.save();c.translate(this.pos.x,this.pos.y);c.imageSmoothingEnabled=false;
-        c.drawImage(sprite.canvas,-w/2,-h,w,h);c.restore();return;}
+        if(frame==='musicianPlayGinger'){
+          // The source has a tiny mark in its empty top-left margin. Omit that transparent corner.
+          const inset=Math.max(8,Math.round(sprite.width*.035)),dx=inset*w/sprite.width,dy=inset*h/sprite.height;
+          c.drawImage(sprite.canvas,inset,0,sprite.width-inset,sprite.height,-w/2+dx,-h,w-dx,h);
+          c.drawImage(sprite.canvas,0,inset,inset,sprite.height-inset,-w/2,-h+dy,dx,h-dy);
+        }else c.drawImage(sprite.canvas,-w/2,-h,w,h);
+        c.restore();return;}
     }
     c.save();c.translate(this.pos.x,this.pos.y);c.strokeStyle='#eedaca';c.lineWidth=7;c.lineCap='round';
     c.fillStyle='#38475b';c.beginPath();c.moveTo(-24,-12);c.lineTo(19,-13);c.lineTo(28,62);c.lineTo(-31,61);c.closePath();c.fill();

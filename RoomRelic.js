@@ -11,10 +11,11 @@ class RoomRelic extends Vehicle {
   }
   show() {
     const c=drawingContext,t=this.age;
-    c.save();c.translate(this.pos.x,this.pos.y);c.rotate(Math.sin(t*.8+this.index)*.16);
+    c.save();c.translate(this.pos.x,this.pos.y);
+    if(this.kind!=='chair')c.rotate(Math.sin(t*.8+this.index)*.16);
     if(typeof sceneAssets!=='undefined'&&sceneAssets){
-      const name=this.kind==='note'?'propNotes':'prop'+this.kind[0].toUpperCase()+this.kind.slice(1);
-      const sprite=sceneAssets[name];if(sprite){const h=this.kind==='note'?24:this.kind==='page'?37:57,w=h*sprite.width/sprite.height;
+      const name=this.kind==='chair'?'propChairClean':this.kind==='note'?'propNotes':'prop'+this.kind[0].toUpperCase()+this.kind.slice(1);
+      const sprite=sceneAssets[name];if(sprite){const h=this.kind==='chair'?112:this.kind==='note'?24:this.kind==='page'?37:57,w=h*sprite.width/sprite.height;
         c.imageSmoothingEnabled=false;c.drawImage(sprite.canvas,-w/2,-h/2,w,h);c.restore();return;}
     }
     c.lineWidth=2;c.strokeStyle='#d9b99b';c.fillStyle='#483443';
