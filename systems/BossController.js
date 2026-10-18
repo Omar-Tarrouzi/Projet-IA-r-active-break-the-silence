@@ -6,9 +6,9 @@ class BossController {
     this.arrival.maxSpeed=9;this.arrival.maxForce=.72;
     this.initialPointCount=VESPER.particles;this.points=[];
     this.shapeDef={contactDamage:10,resonance:'HIGH'};
-    this.isDead=false;this.isCleared=false;this.tookDamage=false;this.defeatTimer=0;this.coreHits=0;this.coreDangerous=false;this.coreContactUsed=false;this.coreAim={x,y};this.coreHitCycle=-1;this.coreVulnerable=false;
+    this.isDead=false;this.isCleared=false;this.tookDamage=false;this.defeatTimer=0;this.coreHits=0;this.coreDangerous=false;this.coreContactUsed=false;this.coreAim={x,y};this.coreHitCycle=-1;this.coreVulnerable=false;this.lastCoreHitAt=-Infinity;
     this.cycle=0;this.firstRingGrace=true;this.hitFlash=0;this.ringClock=0;this.aimAngle=Math.PI/2;
-    this.regenerationReserve=VESPER.regenerationReserve;this.regeneratedThisRecall=false;this.regeneratedThisEdge=false;this.recallInterrupted=false;this.regenerationFlash=0;
+    this.regenerationReserve=VESPER.regenerationReserve;this.regeneratedThisRecall=false;this.regeneratedThisEdge=false;this.regeneratedThisRecovery=false;this.recallInterrupted=false;this.regenerationFlash=0;
     this.focus={x,y};this.wordCenter={x,y:y+270};this.aim={x,y:y+500};this.missileCount=VESPER.missileCount;this.missiles=[];this.wordCycle=0;this.currentAttackWord='CHUT';
     // Glyph geometry is computed once. Recall can restore a bounded number of missing slots.
     this.introWord=generateProceduralWordPoints('VESPER',VESPER.particles);
@@ -27,12 +27,9 @@ class BossController {
     const kicker='VESPER · SOVEREIGN OF SILENCE';
     const phase=this.phase;
     if(phase==='ENTRANCE')return {kicker,action:'WATCH THE THRONE FORM',detail:'Its points are its finite power.',progress:0};
-    if(phase==='EXPOSED'){
-      const beat=this.phaseTimer%3.2,cycle=Math.floor(this.phaseTimer/3.2);
-      const spent=this.coreHitCycle===cycle;
-      return {kicker,action:beat<.9?'MOVE OFF THE MARKED LINE':beat<1.55?'DODGE THE LUNGE':spent?'CORE SEALED · RECHARGE':'HIGH · STRIKE THE OPEN CORE',
-        detail:'One core hit per recovery. '+(VESPER.coreHitsRequired-this.coreHits)+' remaining.',progress:beat/3.2};
-    }
+    if(phase==='EXPOSED')return {kicker,action:'SWARM BROKEN · HIT VESPER NOW',
+      detail:'Any tuning hurts while the throne is gone. It reforms in '+Math.ceil(Math.max(0,VESPER.exposureDuration-this.phaseTimer))+'s. '+(VESPER.coreHitsRequired-this.coreHits)+' hits remain.',
+      progress:this.phaseTimer/VESPER.exposureDuration};
     if(phase==='DEFEAT')return {kicker,action:'SILENCE BROKEN',detail:'The ascent continues.',progress:1};
     if(phase==='RECALL')return {kicker,action:'INTERRUPT THE RECALL · HIT VESPER',detail:'A direct blast stops him rebuilding the throne.',progress:this.phaseTimer/VESPER.durations.RECALL};
     if(phase.startsWith('ORBIT'))return {kicker,action:'FOLLOW THE ROTATING GAP',detail:'Slip through the opening in his particle rings.',progress:phase==='ORBIT'?this.phaseTimer/VESPER.durations.ORBIT:0};
@@ -46,21 +43,21 @@ class BossController {
     if(!p||p.isDead||p.isConverted)return false;
     p.isDead=true;this.tookDamage=true;this.finishIfEmpty();return true;
   }
-  regenerate(){
-    if(this.regenerationReserve<=0||!['RECALL','EDGE'].includes(this.phase)||(this.phase==='RECALL'&&this.recallInterrupted))return 0;
+  regenerate(requested=null){
+    if(!['RECALL','EDGE','RECOVER'].includes(this.phase)||(this.phase==='RECALL'&&this.recallInterrupted))return 0;
     const live=this.getLivePoints().length;
-    const count=Math.min(this.phase==='EDGE'?22:VESPER.regenerationBatch,this.regenerationReserve,Math.max(0,VESPER.regenerationCeiling-live));
+    const count=Math.min(typeof requested==='number'?requested:(this.phase==='EDGE'?22:this.phase==='RECOVER'?12:VESPER.regenerationBatch),Math.max(0,VESPER.regenerationCeiling-live));
     if(!count)return 0;
     let restored=0;
     for(const p of this.points){
-      if(!p.isDead||p.isConverted)continue;
-      p.isDead=false;p.state='HOMED';p.stunTimer=0;p.dangerous=false;
+      if(!p.isDead&&!p.isConverted)continue;
+      p.isConverted=false;p.isDead=false;p.state='HOMED';p.stunTimer=0;p.dangerous=false;
       p.missileIndex=null;p.missileSlot=null;
       p.homeTarget={x:this.anchor.pos.x,y:this.anchor.pos.y};
       if(++restored===count)break;
     }
     if(!restored)return 0;
-    this.regenerationReserve-=restored;this.regenerationFlash=.7;
+    this.regenerationReserve=Math.max(0,this.regenerationReserve-restored);this.regenerationFlash=.7;
     if(restored&&typeof hud!=='undefined'&&hud)hud.addPopup('THRONE REFORMS · +'+restored,this.anchor.pos.x,this.anchor.pos.y-105,'#c895ff');
     return restored;
   }
@@ -73,10 +70,10 @@ class BossController {
   finishIfEmpty(){
     if(this.getLivePoints().length)return;
     if(this.phase==='EXPOSED'||this.phase==='DEFEAT'||this.isDead)return;
-    this.phase='EXPOSED';this.phaseTimer=0;this.anchor.phase='EXPOSED';this.coreHitCycle=-1;this.coreVulnerable=false;
+    this.phase='EXPOSED';this.phaseTimer=0;this.anchor.phase='EXPOSED';this.coreHitCycle=-1;this.coreVulnerable=true;this.lastCoreHitAt=-Infinity;
     for(const m of this.missiles)m.anchor.isDead=true;
     this.missiles=[];
-    if(typeof hud!=='undefined'&&hud)hud.addPopup('CORE EXPOSED · CHARGE HIGH',this.anchor.pos.x,this.anchor.pos.y-105,'#f3d6ff');
+    if(typeof hud!=='undefined'&&hud)hud.addPopup('THRONE BROKEN · HIT VESPER',this.anchor.pos.x,this.anchor.pos.y-105,'#f3d6ff');
   }
   directHit(sw){
     if(!['RECOVER','RECALL','EDGE','SPEAR_WARN','LUNGE'].includes(this.phase)||!sw||!calculateBlastForce(this.anchor,sw))return 0;
@@ -92,13 +89,11 @@ class BossController {
     return hits;
   }
   strikeCore(sw){
-    if(this.phase!=='EXPOSED'||!this.coreVulnerable||!sw||sw.tuning?.id!=='HIGH')return false;
-    const cycle=Math.floor(this.phaseTimer/3.2);
-    if(this.coreHitCycle===cycle)return false;
+    if(this.phase!=='EXPOSED'||!this.coreVulnerable||!sw||this.phaseTimer-this.lastCoreHitAt<.65)return false;
     if(!calculateBlastForce(this.anchor,sw))return false;
     if(!sw.coreHitBosses)sw.coreHitBosses=new Set();
     if(sw.coreHitBosses.has(this))return false;
-    sw.coreHitBosses.add(this);this.coreHitCycle=cycle;this.coreVulnerable=false;this.coreHits++;
+    sw.coreHitBosses.add(this);this.lastCoreHitAt=this.phaseTimer;this.coreHits++;
     if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playCoreBreak();
     if(typeof spawnSparks==='function')spawnSparks(this.anchor.pos.x,this.anchor.pos.y,'#f3d6ff',24);
     if(this.coreHits>=VESPER.coreHitsRequired){
@@ -165,23 +160,25 @@ class BossController {
     this.phaseTimer+=dt;this.hitFlash=Math.max(0,this.hitFlash-dt);this.regenerationFlash=Math.max(0,this.regenerationFlash-dt);
     if(this.phase==='RECALL'&&!this.regeneratedThisRecall&&this.phaseTimer>=.9){this.regeneratedThisRecall=true;this.regenerate();}
     if(this.phase==='EDGE'&&!this.regeneratedThisEdge&&this.phaseTimer>=.8){this.regeneratedThisEdge=true;this.regenerate();}
+    if(this.phase==='RECOVER'&&!this.regeneratedThisRecovery&&this.phaseTimer>=.7){this.regeneratedThisRecovery=true;this.regenerate();}
     if(this.phase==='ORBIT')this.ringClock+=dt;
     if(this.phase==='EXPOSED'){
-      const a=this.anchor,beat=this.phaseTimer%3.2;
-      this.coreDangerous=beat>=.9&&beat<1.55;
-      this.coreVulnerable=beat>=1.55&&beat<3.05&&this.coreHitCycle!==Math.floor(this.phaseTimer/3.2);
-      if(beat<.9)this.coreAim={x:guitar.pos.x,y:guitar.pos.y};
-      if(beat<.15)this.coreContactUsed=false;
-      a.maxSpeed=this.coreDangerous?11+this.coreHits*1.4:5;
-      a.maxForce=this.coreDangerous?.62+this.coreHits*.05:.4;
-      if(this.coreDangerous)a.applyForce(a.seek(createVector(this.coreAim.x,this.coreAim.y)));
-      else a.applyForce(a.arrive(createVector(shaft.x+shaft.width/2+Math.sin(this.phaseTimer*1.4)*95,shaft.y+shaft.height*.42)));
-      a.update();return;
+      const a=this.anchor;this.coreDangerous=false;this.coreVulnerable=true;
+      a.maxSpeed=5;a.maxForce=.4;
+      a.applyForce(a.arrive(createVector(shaft.x+shaft.width/2+Math.sin(this.phaseTimer*1.2)*55,shaft.y+shaft.height*.58)));
+      a.update();
+      if(this.phaseTimer>=VESPER.exposureDuration){
+        this.phase='RECALL';this.phaseTimer=0;this.anchor.phase='RECALL';
+        this.recallInterrupted=false;this.regeneratedThisRecall=true;
+        this.regenerate(96);this.coreVulnerable=false;
+        if(typeof hud!=='undefined'&&hud)hud.addPopup('THRONE REFORMS · BREAK IT AGAIN',a.pos.x,a.pos.y-105,'#c895ff');
+      }
+      return;
     }
     if(this.phaseTimer>=VESPER.durations[this.phase]){
       const previous=this.phase;if(previous==='ORBIT')this.firstRingGrace=false;
       this.phase=nextBossPhase(previous,ratio,this.recoverFrom);this.phaseTimer=0;
-      if(this.phase==='RECOVER')this.recoverFrom=previous;
+      if(this.phase==='RECOVER'){this.recoverFrom=previous;this.regeneratedThisRecovery=false;}
       if(this.phase==='RECALL'){this.regeneratedThisRecall=false;this.recallInterrupted=false;}
       if(this.phase==='ORBIT_WARN'||this.phase==='HAND_WARN'){
         this.focus={x:Math.max(shaft.x+240,Math.min(shaft.x+shaft.width-240,guitar.pos.x)),
@@ -255,13 +252,11 @@ class BossController {
     if(this.isDead)return;const c=drawingContext;
     if(this.phase==='EXPOSED'){
       c.save();const t=this.phaseTimer;const x=this.anchor.pos.x,y=this.anchor.pos.y;
-      const beat=t%3.2;c.strokeStyle=this.coreVulnerable?'#ffe5b6':'#b88caf';c.lineWidth=this.coreVulnerable?3:2;
+      c.strokeStyle='#ffe5b6';c.lineWidth=3;
       for(let i=0;i<3-this.coreHits;i++){c.globalAlpha=.8-i*.16;c.beginPath();
         c.arc(x,y+18,45+i*13+Math.sin(t*3+i)*3,0,Math.PI*2);c.stroke();}
       c.globalAlpha=.9;c.fillStyle='#ffe5b6';c.font='bold 14px monospace';c.textAlign='center';
-      c.fillText(this.coreVulnerable?'HIGH · CORE OPEN':beat<.9?'LOCKING AIM':beat<1.55?'DODGE':'CORE SEALED',x,y-95);
-      if(beat<.9){c.globalAlpha=.5;c.strokeStyle='#ff728f';c.setLineDash([6,7]);
-        c.beginPath();c.moveTo(x,y+20);c.lineTo(this.coreAim.x,this.coreAim.y);c.stroke();c.setLineDash([]);}
+      c.fillText('HIT VESPER · '+Math.ceil(Math.max(0,VESPER.exposureDuration-t))+'s',x,y-95);
       if(this.coreVulnerable){c.globalAlpha=.5+.3*Math.sin(t*13)**2;c.strokeStyle='#ffe5b6';c.lineWidth=4;
         c.beginPath();c.arc(x,y+18,31+Math.sin(t*11)*4,0,Math.PI*2);c.stroke();}
       c.restore();

@@ -1,5 +1,5 @@
 // Pre-rendered attack frames; each moving particle remains a Vehicle.
-const ATTACK_KINDS=['vesper','onyx','nova','cadence','onyxTip','novaCore','vesperTip'];
+const ATTACK_KINDS=['vesper','onyx','nova','cadence','onyxTip','novaCore','vesperTip','cadenceDiamond'];
 function attackVisual(point){
   if(!point?.boss)return null;
   const key=point.boss.profile?.key||point.boss.bossWord;
@@ -47,6 +47,9 @@ class AttackAtlas{
       c.quadraticCurveTo(9,1,4,7);c.closePath();c.fill();
       c.fillStyle=returned?'#e5fff3':'#d8f8ff';
       c.beginPath();c.moveTo(0,6);c.lineTo(-2,1);c.lineTo(1,-4);c.lineTo(3,3);c.closePath();c.fill();
+    }else if(kind==='cadenceDiamond'){
+      c.beginPath();c.moveTo(0,-14);c.lineTo(11,0);c.lineTo(0,14);c.lineTo(-11,0);c.closePath();c.fill();
+      c.fillStyle=returned?'#675222':'#392b20';c.beginPath();c.moveTo(0,-7);c.lineTo(5,0);c.lineTo(0,7);c.lineTo(-5,0);c.closePath();c.fill();
     }else if(kind==='novaCore'){
       const radius=10;
       c.beginPath();c.arc(0,0,radius,frame*.23,Math.PI*1.65+frame*.23);c.stroke();

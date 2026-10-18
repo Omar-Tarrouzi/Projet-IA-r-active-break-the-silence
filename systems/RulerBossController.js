@@ -11,12 +11,12 @@ class RulerBossController {
     this.initialPointCount=this.profile.particles;this.points=[];
     this.shapeDef={contactDamage:10,resonance:this.profile.attackATune};
     this.isDead=false;this.isCleared=false;this.tookDamage=false;
-    this.coreHits=0;this.coreHitsRequired=3;this.coreDangerous=false;
+    this.coreHits=0;this.coreHitsRequired=3;this.coreDangerous=false;this.lastCoreHitAt=-Infinity;this.pendingCoreHits=0;
     this.focus={x,y:y+390};this.defeatTimer=0;
-    this.chainDarts=[];this.chainBreaks=[0,0,0];this.echoes=[];this.echoTune='HIGH';
+    this.chainDarts=[];this.chainBreaks=[0,0,0];this.echoes=[];this.diamonds=[];this.diamondLaunches=0;this.echoTune='HIGH';
     this.echoLaunches=0;this.beatClock=0;this.lastCounterBeat=-1;this.staggerTimer=0;
     this.counterSeen=false;this.lastAct=1;this.hitFlash=0;
-    this.regenerationReserve=192;this.regeneratedThisRecovery=false;
+    this.regenerationReserve=72;this.regeneratedThisRecovery=false;
     for(let i=0;i<this.initialPointCount;i++){
       const angle=i*2.3999632297,r=30+i*.48;
       const p=new SwarmPoint(x+Math.cos(angle)*r,y+Math.sin(angle)*r,{x:0,y:0},this.anchor,this.profile.attackATune);
@@ -29,6 +29,7 @@ class RulerBossController {
     if(this.cycle===1&&this.phase==='A'&&this.phaseTimer<1.4)return [];
     if(this.profile.key==='ONYX')return this.chainDarts.filter(d=>!d.isDead&&d.mode==='SEEK'&&!d.hitPlayer);
     if(this.profile.key==='NOVA')return this.echoes.filter(e=>!e.isDead&&e.mode==='SEEK');
+    if(this.profile.key==='CADENCE')return this.diamonds.filter(d=>!d.isDead&&d.mode==='SEEK'&&!d.hitPlayer);
     return [];
   }
   damagePoint(p){
@@ -51,7 +52,7 @@ class RulerBossController {
   }
   regenerate(){
     if(this.phase!=='RECOVER'||this.regenerationReserve<=0)return 0;
-    const count=Math.min(18,this.regenerationReserve,Math.max(0,108-this.getLivePoints().length));
+    const count=Math.min(12,this.regenerationReserve,Math.max(0,108-this.getLivePoints().length));
     if(!count)return 0;
     let restored=0;
     for(const p of this.points){if(!p.isDead||p.isConverted)continue;
@@ -65,9 +66,15 @@ class RulerBossController {
   }
   finishIfEmpty(){
     if(this.getLivePoints().length||this.phase==='EXPOSED'||this.phase==='DEFEAT'||this.isDead)return;
-    this.phase='EXPOSED';this.phaseTimer=0;this.anchor.phase='EXPOSED';
-    this.chainDarts.forEach(d=>d.isDead=true);this.echoes.forEach(e=>e.isDead=true);
-    if(typeof hud!=='undefined'&&hud)hud.addPopup('CORE EXPOSED · '+this.profile.coreTune,
+    if(this.profile.key==='ONYX'){
+      this.phase='DEFEAT';this.phaseTimer=0;this.anchor.phase='DEFEAT';
+      this.chainDarts.forEach(d=>d.isDead=true);
+      if(typeof hud!=='undefined'&&hud)hud.addPopup('CHAINS BROKEN · DISCORD FALLS',this.anchor.pos.x,this.anchor.pos.y-100,this.profile.color);
+      return;
+    }
+    this.phase='EXPOSED';this.phaseTimer=0;this.lastCoreHitAt=-Infinity;this.anchor.phase='EXPOSED';
+    this.echoLaunches=0;this.diamondLaunches=0;
+    if(typeof hud!=='undefined'&&hud)hud.addPopup('CORE OPEN · REDIRECT THE ATTACK',
       this.anchor.pos.x,this.anchor.pos.y-100,this.profile.color);
   }
   directHit(sw){
@@ -82,18 +89,27 @@ class RulerBossController {
     }
     return hits;
   }
+  hitCore(source){
+    if(this.phase!=='EXPOSED'||this.phaseTimer-this.lastCoreHitAt<.65)return false;
+    this.lastCoreHitAt=this.phaseTimer;this.coreHits++;this.hitFlash=.22;reactRuler(this.anchor);
+    if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playCoreBreak();
+    if(typeof spawnSparks==='function')spawnSparks(this.anchor.pos.x,this.anchor.pos.y,this.profile.color,20);
+    if(this.coreHits>=this.coreHitsRequired){this.phase='DEFEAT';this.phaseTimer=0;this.anchor.phase='DEFEAT';}
+    else if(typeof hud!=='undefined'&&hud)hud.addPopup(source+' · CORE '+this.coreHits+'/'+this.coreHitsRequired,
+      this.anchor.pos.x,this.anchor.pos.y-90,this.profile.color);
+    return true;
+  }
+  creditCoreReturn(source){
+    if(this.phase!=='EXPOSED')return false;
+    if(!this.hitCore(source))this.pendingCoreHits=Math.min(this.coreHitsRequired-this.coreHits,this.pendingCoreHits+1);
+    return true;
+  }
   strikeCore(sw){
     if(this.phase!=='EXPOSED'||sw?.tuning?.id!==this.profile.coreTune||!calculateBlastForce(this.anchor,sw))return false;
     if(!sw.coreHitBosses)sw.coreHitBosses=new Set();
-    if(sw.coreHitBosses.has(this))return false;sw.coreHitBosses.add(this);
-    this.coreHits++;
-    if(typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playCoreBreak();
-    if(typeof spawnSparks==='function')spawnSparks(this.anchor.pos.x,this.anchor.pos.y,this.profile.color,20);
-    if(this.coreHits>=this.coreHitsRequired){
-      this.phase='DEFEAT';this.phaseTimer=0;this.anchor.phase='DEFEAT';
-    }else if(typeof hud!=='undefined'&&hud)hud.addPopup('CORE '+this.coreHits+' / '+this.coreHitsRequired,
-      this.anchor.pos.x,this.anchor.pos.y-90,this.profile.color);
-    return true;
+    if(sw.coreHitBosses.has(this))return false;
+    if(!this.hitCore('DIRECT HIT'))return false;
+    sw.coreHitBosses.add(this);return true;
   }
   launchChains(guitar,shaft={x:20,y:20,width:760,height:860}){
     this.chainDarts=[];this.chainBreaks=[0,0,0];
@@ -186,7 +202,8 @@ class RulerBossController {
     for(const e of this.echoes){
       if(e.isDead)continue;e.updatePulse(dt,this.anchor.pos);
       if(e.mode==='RETURN'&&Math.hypot(e.pos.x-this.anchor.pos.x,e.pos.y-this.anchor.pos.y)<55){
-        e.isDead=true;const hits=this.damageReserve(22,this.anchor.pos);reactRuler(this.anchor);
+        e.isDead=true;const core=this.creditCoreReturn('ECHO RETURN');
+        const hits=core?0:this.damageReserve(22,this.anchor.pos);reactRuler(this.anchor);
         this.staggerTimer=Math.max(this.staggerTimer,.75);
         if(typeof hud!=='undefined'&&hud)hud.addPopup('ECHO COLLAPSE · -'+hits,
           this.anchor.pos.x,this.anchor.pos.y-90,'#74d9ff');
@@ -196,6 +213,25 @@ class RulerBossController {
       }
     }
     this.echoes=this.echoes.filter(e=>!e.isDead);
+  }
+  launchDiamond(guitar){
+    const offset=this.diamondLaunches%2?58:-58;
+    const d=new CadenceDiamond(this.anchor.pos.x+offset,this.anchor.pos.y+55,guitar.pos);
+    this.diamonds.push(d);this.diamondLaunches++;
+    if(typeof hud!=='undefined'&&hud)hud.addPopup('DIAMOND LOCK · DODGE TO RETURN',guitar.pos.x,guitar.pos.y-80,'#efd48b');
+  }
+  updateDiamonds(dt,guitar){
+    for(const d of this.diamonds){
+      if(d.isDead)continue;
+      d.updateDiamond(dt,guitar,this.anchor.pos);
+      if(d.mode==='RETURN'&&Math.hypot(d.pos.x-this.anchor.pos.x,d.pos.y-this.anchor.pos.y)<58){
+        d.isDead=true;const core=this.creditCoreReturn('DIAMOND RETURN');
+        const hits=core?0:this.damageReserve(20,this.anchor.pos);
+        this.staggerTimer=Math.max(this.staggerTimer,.7);
+        if(typeof hud!=='undefined'&&hud&&!core)hud.addPopup('DIAMOND RETURN · -'+hits,this.anchor.pos.x,this.anchor.pos.y-95,'#efd48b');
+      }
+    }
+    this.diamonds=this.diamonds.filter(d=>!d.isDead);
   }
   onPlayerBlast(sw){
     if(this.phase==='EXPOSED'||this.phase==='DEFEAT')return false;
@@ -216,7 +252,9 @@ class RulerBossController {
   getGuide(){
     const act=this.getAct(),kicker=this.profile.name+' · ACT '+act;
     if(this.phase==='ENTRANCE')return {kicker,action:'READ THE RULER',detail:'The first attack gives you time to learn.',progress:0};
-    if(this.phase==='EXPOSED')return {kicker:this.profile.name+' · FINALE',action:this.profile.coreTune+' · HIT THE CORE 3 TIMES',detail:'Each release counts once. Aim at the body.',progress:1};
+    if(this.phase==='EXPOSED')return {kicker:this.profile.name+' · FINALE',
+      action:this.profile.key==='CADENCE'?'DODGE THE DIAMOND · GUIDE IT BACK':'PARRY THE BLUE FIRE BACK',
+      detail:this.profile.coreTune+' direct blasts also hurt the exposed core. '+(this.coreHitsRequired-this.coreHits)+' hits remain.',progress:this.coreHits/this.coreHitsRequired};
     if(this.phase==='DEFEAT')return {kicker,action:'SOVEREIGN BROKEN',detail:'The ascent continues.',progress:1};
     if(this.phase==='RECOVER'&&!this.chainDarts.some(d=>!d.isDead&&d.mode==='HOLD')&&!this.echoes.some(e=>!e.isDead&&e.mode==='SEEK'))
       return {kicker,action:this.counterSeen?'COUNTER LANDED · RECHARGE':'DIRECT HIT · CHIP THE RULER',detail:'Open body shots remove a few particles.',progress:0};
@@ -232,15 +270,17 @@ class RulerBossController {
         detail:echo?'Switch tuning, charge, and release into the pulse.':'It repeats the tuning of your last blast.',progress:echo?Math.min(1,echo.age/3):0};
     }
     if(this.phase==='RECOVER')return {kicker,action:'CATCH THE NEXT BEAT',detail:'Reposition and recharge for the next measure.',progress:0};
+    if(this.phase==='B'&&this.diamonds.some(d=>!d.isDead&&d.mode!=='RETURN'))return {
+      kicker,action:'DODGE THE LOCKED DIAMOND',detail:'Move after it commits. The missed diamond curves back into Cadence.',progress:Math.min(1,this.phaseTimer/3)};
     const tune=this.phase.startsWith('B')?'HIGH':'LOW',phase=this.beatClock%1.2;
     return {kicker,action:'SET '+tune+' · RELEASE ON THE METRONOME FLASH',detail:'The pendulum marks the beat. Counter as the weight reaches its mark.',progress:phase/1.2};
   }
   getHint(){
-    if(this.phase==='EXPOSED')return this.profile.coreTune+' · HIT CORE';
+    if(this.phase==='EXPOSED')return this.profile.key==='CADENCE'?'DODGE THE DIAMOND · RETURN IT':'PARRY BLUE FIRE · RETURN IT';
     if(this.profile.key==='ONYX')return this.phase.endsWith('_WARN')?'CHAIN DART INCOMING':
       this.chainDarts.some(d=>!d.isDead&&d.mode==='HOLD')?'HOLD CHARGE NEAR TIP · RELEASE':'MID · BREAK LINKS / RETURN DART';
     if(this.profile.key==='NOVA')return 'MATCH ECHO COLOUR · PARRY';
-    return 'FIRE '+(this.phase.startsWith('B')?'HIGH':'LOW')+' ON THE FLASH';
+    return this.phase==='B'?'DODGE DIAMONDS · RETURN THEM': 'FIRE '+(this.phase.startsWith('B')?'HIGH':'LOW')+' ON THE FLASH';
   }
   update(dt,guitar,shaft){
     if(this.isDead)return;
@@ -259,7 +299,21 @@ class RulerBossController {
       return;
     }
     if(this.phase==='EXPOSED'){
-      a.applyForce(a.arrive(createVector(shaft.x+shaft.width/2+Math.sin(this.phaseTimer*2)*100,shaft.y+200)));a.update();
+      if(this.pendingCoreHits>0&&this.phaseTimer-this.lastCoreHitAt>=.65){
+        this.pendingCoreHits--;this.hitCore('RETURNED ATTACK');
+      }
+      if(this.phase==='DEFEAT')return;
+      a.applyForce(a.arrive(createVector(shaft.x+shaft.width/2+Math.sin(this.phaseTimer*1.3)*55,shaft.y+shaft.height*.61)));a.update();
+      if(this.profile.key==='NOVA'){
+        if(this.phaseTimer>=this.echoLaunches*2+.4&&this.echoes.filter(e=>!e.isDead).length<2)
+          this.launchEcho(guitar);
+        this.updateEchoes(dt,guitar);
+      }
+      if(this.profile.key==='CADENCE'){
+        if(this.phaseTimer>=this.diamondLaunches*2+.5&&this.diamonds.filter(d=>!d.isDead).length<2)
+          this.launchDiamond(guitar);
+        this.updateDiamonds(dt,guitar);
+      }
       return;
     }
     const attackSpan=this.getAct()===3?3.0:this.getAct()===2?3.2:3.4;
@@ -280,7 +334,7 @@ class RulerBossController {
         this.cycle++;
         if(this.profile.key==='ONYX')this.launchChains(guitar,shaft);
         if(this.profile.key==='NOVA')this.echoLaunches=0;
-        if(this.profile.key==='CADENCE'){this.beatClock=0;this.lastCounterBeat=-1;}
+        if(this.profile.key==='CADENCE'){this.beatClock=0;this.lastCounterBeat=-1;this.diamondLaunches=0;}
       }
     }
     a.phase=this.phase;a.beatClock=this.beatClock;
@@ -298,9 +352,11 @@ class RulerBossController {
       this.updateEchoes(dt,guitar);
     }
     if(this.profile.key==='CADENCE'&&['A','B'].includes(this.phase)){
+      if(this.phase==='B'&&this.phaseTimer>=this.diamondLaunches*1.35+.6&&this.diamondLaunches<2)this.launchDiamond(guitar);
       const oldBeat=Math.floor(this.beatClock/1.2);this.beatClock+=dt;
       if(Math.floor(this.beatClock/1.2)>oldBeat&&typeof audioSynth!=='undefined'&&audioSynth)audioSynth.playBeat();
     }
+    if(this.profile.key==='CADENCE')this.updateDiamonds(dt,guitar);
     const center=this.phase==='ENTRANCE'||this.phase==='RECOVER'?a.pos:this.focus;
     const tune=this.phase.startsWith('A')?this.profile.attackATune:this.profile.attackBTune;
     for(const p of this.getLivePoints()){
@@ -396,6 +452,13 @@ class RulerBossController {
     for(const p of this.points)p.show();
     for(const dart of this.chainDarts)dart.show();
     for(const e of this.echoes)e.show();
+    if(this.profile.key==='CADENCE')for(const d of this.diamonds)if(!d.isDead&&d.mode==='WARN'){
+      c.save();c.strokeStyle='#efd48b';c.globalAlpha=.55+.3*Math.sin(d.age*18)**2;
+      c.lineWidth=2;c.setLineDash([5,7]);c.beginPath();c.moveTo(d.pos.x,d.pos.y);
+      c.lineTo(d.lock.x,d.lock.y);c.stroke();c.setLineDash([]);
+      c.beginPath();c.arc(d.lock.x,d.lock.y,28,0,Math.PI*2);c.stroke();c.restore();
+    }
+    for(const d of this.diamonds)d.show();
     drawBossArrival(this,c);
     if(this.hitFlash>0){c.save();c.globalAlpha=this.hitFlash/.22*.8;c.strokeStyle=this.profile.color;c.lineWidth=4;
       c.beginPath();c.arc(this.anchor.pos.x,this.anchor.pos.y,54+(1-this.hitFlash/.22)*26,0,Math.PI*2);c.stroke();c.restore();}
