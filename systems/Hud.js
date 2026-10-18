@@ -65,7 +65,7 @@ class Hud {
       const hits=boss.coreHitsRequired||VESPER.coreHitsRequired;
       const vesper=boss.bossWord==='HUSH';
       const shield=Math.max(0,Math.min(1,count/boss.initialPointCount));
-      this.bar('boss-fill',vesper?Math.max(0,(hits-boss.coreHits-1+shield)/hits):exposed?(hits-boss.coreHits)/hits:shield);
+      this.bar('boss-fill',vesper?Math.max(0,(hits-boss.coreHits-.5+shield*.5)/hits):exposed?(hits-boss.coreHits)/hits:shield);
       this.text('boss-count',vesper?'CORE '+boss.coreHits+'/'+hits+' · THRONE '+count:exposed?'CORE '+(hits-boss.coreHits)+' / '+hits:count+' / '+boss.initialPointCount);this.text('boss-phase',(boss.getAct?'ACT '+boss.getAct()+' · ':'')+boss.phase.replaceAll('_',' '));this.text('boss-counter',boss.getHint?boss.getHint():boss.profile?(exposed?boss.profile.coreTune+' · HIT CORE':boss.phase.endsWith('_WARN')?'MATCH '+(boss.phase.startsWith('A')?boss.profile.attackATune:boss.profile.attackBTune)+' · BREAK FORM':boss.phase==='A'||boss.phase==='B'?'DODGE · SHATTER PARTICLES':'PREPARE'):['SHIELD','RECALL'].includes(boss.phase)?'MID · BREAK GUARD':['HAND','HAND_WARN'].includes(boss.phase)?'LOW · BREAK GRASP':['MISSILE','MISSILE_WARN'].includes(boss.phase)?'MATCH COLOUR · PARRY':['ORBIT','ORBIT_WARN'].includes(boss.phase)?'FIND THE GAP':exposed?'CHARGE HIGH · HIT CORE':'HIGH · PIERCE');}
     const live=hasStarted&&!openingScene&&!isPaused&&!score.gameOver&&!(score.gameWon&&!score.endlessMode);
     const regular=director.formations.find(f=>!f.isBoss&&!f.isDead&&['TELEGRAPH','STRIKE'].includes(f.phase));
