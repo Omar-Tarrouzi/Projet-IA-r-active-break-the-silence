@@ -539,7 +539,7 @@ class FormationController {
   }
 
   show() {
-    if((this.phase==='TELEGRAPH'||this.phase==='ENCORE_WARN')&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION'].includes(this.shapeKey)){
+    if((this.phase==='TELEGRAPH'||this.phase==='ENCORE_WARN')&&this.warningTarget&&['ARROW','HAMMER','SCISSORS','AXE','JACKHAMMER','HAND','MURMURATION','PINCER'].includes(this.shapeKey)){
       const c=drawingContext,t=this.phaseTimer,w=this.warningTarget;
       c.save();c.globalAlpha=.28+.28*Math.sin(t*12)**2;c.strokeStyle='#ffd4a5';c.lineWidth=2;c.setLineDash([8,7]);
       c.beginPath();c.arc(w.x,w.y,38+Math.sin(t*9)*6,0,Math.PI*2);c.stroke();
