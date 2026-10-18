@@ -8,7 +8,7 @@ const BANDS = [
     climbSpeed: 12.0, // m/s
     shapes: ['ARROW', 'HAMMER'],
     smartSwarms: false,
-    restWindow: 4.0, // seconds
+    restWindow: 1.6, // seconds
     subtext: 'Learn to maneuver, dodge, and resonate.'
   },
   {
@@ -21,7 +21,7 @@ const BANDS = [
     smartSwarms: false,
     bossAlt: 1000,
     bossWord: 'HUSH',
-    restWindow: 3.5,
+    restWindow: 1.35,
     subtext: 'Switch tunings. Shatter resonant shapes or harmonize.'
   },
   {
@@ -34,7 +34,7 @@ const BANDS = [
     smartSwarms: true, // Swarm evades charge aura
     bossAlt: 2000,
     bossWord: 'MUTE',
-    restWindow: 3.0,
+    restWindow: 1.15,
     subtext: 'Smart swarms evade your charge. Bait them!'
   },
   {
@@ -47,7 +47,7 @@ const BANDS = [
     smartSwarms: true,
     bossAlt: 3000,
     bossWord: 'ECHO',
-    restWindow: 2.5,
+    restWindow: 1.0,
     subtext: 'All swarms active. Hear the echo before it strikes.'
   },
   {

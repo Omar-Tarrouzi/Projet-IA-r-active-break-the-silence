@@ -84,7 +84,8 @@ function drawRulerLayers(c,sprite,h,pose,motion,previous=null,blend=1){
  const w=Math.min(260,h*sprite.width/sprite.height),source=sprite.canvas;
  const bands=Math.min(24,sprite.height),step=sprite.height/bands;
  for(let i=0;i<bands;i++){
-  const sy=i*step,sh=Math.min(step,sprite.height-sy),u=(sy+sh*.5)/sprite.height;
+  const sy=Math.floor(i*sprite.height/bands),end=Math.floor((i+1)*sprite.height/bands);
+  const sh=end-sy,u=(sy+sh*.5)/sprite.height;
   const hair=Math.pow(Math.max(0,1-u/.3),2);
   const cloth=Math.pow(Math.max(0,(u-.42)/.58),2);
   const shoulders=Math.exp(-Math.pow((u-.32)/.14,2));
@@ -92,8 +93,8 @@ function drawRulerLayers(c,sprite,h,pose,motion,previous=null,blend=1){
   const dx=(pose.hair*hair*55+pose.cloth*cloth*85+pose.stance*legs*48)*motion;
   const dy=pose.foot*legs*20*motion;
   const stretch=1+(pose.arm+pose.gesture)*shoulders*.34*motion+pose.breath*(1-u)*motion;
-  const x=-w*stretch/2+dx,y=-h/2+sy/sprite.height*h+dy;
-  const width=w*stretch,height=sh/sprite.height*h+.35;
+  const x=Math.round(-w*stretch/2+dx),y=Math.round(-h/2+sy/sprite.height*h+dy);
+  const width=Math.round(w*stretch),height=Math.max(1,Math.round(end/sprite.height*h)-Math.round(sy/sprite.height*h));
   if(previous&&blend<1){
    const local=rulerTransitionMix(blend,u),old=previous.canvas;
    const oldY=i*previous.height/bands,oldH=Math.min(previous.height/bands,previous.height-oldY);
@@ -108,7 +109,7 @@ let rulerRenderSurface;
 function drawRulerAnimation(c,body){
  if(typeof sceneAssets==='undefined'||!sceneAssets||!body.animation)return false;
  const a=body.animation;if(!sceneAssets[a.frame])return false;
- const key=body.key||'VESPER',h=key==='VESPER'||key==='ONYX'?205:218;
+ const key=body.key||'VESPER',h=key==='VESPER'||key==='ONYX'?205:key==='NOVA'?198:218;
  const color=key==='ONYX'?'#ff718f':key==='NOVA'?'#74d9ff':key==='CADENCE'?'#e9cf8b':'#c8b7ff';
  const motion=(typeof reduceMotion!=='undefined'&&reduceMotion)?.2:1;
  const draw=(x,y,frame,pose,alpha,previous=null,blend=1)=>{

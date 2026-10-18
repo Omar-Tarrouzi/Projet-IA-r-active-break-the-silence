@@ -13,7 +13,7 @@ class RulerBossController {
     this.isDead=false;this.isCleared=false;this.tookDamage=false;
     this.coreHits=0;this.coreHitsRequired=3;this.coreDangerous=false;
     this.focus={x,y:y+390};this.defeatTimer=0;
-    this.chainDarts=[];this.chainBreaks=[0,0];this.echoes=[];this.echoTune='HIGH';
+    this.chainDarts=[];this.chainBreaks=[0,0,0];this.echoes=[];this.echoTune='HIGH';
     this.echoLaunches=0;this.beatClock=0;this.lastCounterBeat=-1;this.staggerTimer=0;
     this.counterSeen=false;this.lastAct=1;this.hitFlash=0;
     this.regenerationReserve=192;this.regeneratedThisRecovery=false;
@@ -95,14 +95,23 @@ class RulerBossController {
       this.anchor.pos.x,this.anchor.pos.y-90,this.profile.color);
     return true;
   }
-  launchChains(guitar){
-    this.chainDarts=[];this.chainBreaks=[0,0];
+  launchChains(guitar,shaft={x:20,y:20,width:760,height:860}){
+    this.chainDarts=[];this.chainBreaks=[0,0,0];
     for(const p of this.getLivePoints()){p.chainIndex=null;p.chainSlot=null;}
-    const number=this.phase==='B'?2:1,per=number===2?38:54;
+    const number=this.phase==='B'?3:1,per=number===3?30:54;
     const live=this.getLivePoints(),selected=live.slice(0,per*number);
     for(let i=0;i<number;i++){
-      const dart=new ChainDart(this.anchor.pos.x+(i?40:-40),this.anchor.pos.y+70,i);
-      dart.mode='SEEK';dart.target={x:guitar.pos.x+(number===2?(i?65:-65):0),y:guitar.pos.y};
+      const fromEdge=number===3;
+      const start=fromEdge?i===0?{x:shaft.x-65,y:guitar.pos.y-195}:
+        i===1?{x:guitar.pos.x,y:shaft.y-65}:
+        {x:shaft.x+shaft.width+65,y:guitar.pos.y-195}:
+        {x:this.anchor.pos.x-40,y:this.anchor.pos.y+70};
+      const dart=new ChainDart(start.x,start.y,i);
+      dart.mode=fromEdge?'ARC':'SEEK';dart.slotCount=per;
+      dart.arcTarget=fromEdge?i===0?{x:shaft.x+135,y:guitar.pos.y-135}:
+        i===1?{x:guitar.pos.x+95,y:shaft.y+245}:
+        {x:shaft.x+shaft.width-135,y:guitar.pos.y-135}:null;
+      dart.target={x:guitar.pos.x+(fromEdge?(i-1)*70:0),y:guitar.pos.y};
       dart.tugProgress=0;dart.hitPlayer=false;this.chainDarts.push(dart);
     }
     selected.forEach((p,i)=>{p.chainIndex=Math.floor(i/per);p.chainSlot=i%per;});
@@ -127,13 +136,14 @@ class RulerBossController {
   updateChains(dt,guitar,shaft){
     for(const dart of this.chainDarts){
       if(dart.isDead)continue;
+      if(dart.mode==='ARC'&&dart.age>.85)dart.mode='SEEK';
       if(dart.mode==='SEEK'){
         dart.target={x:guitar.pos.x,y:guitar.pos.y-42};
         if((dart.age>1.1&&Math.hypot(dart.pos.x-dart.target.x,dart.pos.y-dart.target.y)<145)||dart.age>2.2){
           dart.mode='HOLD';dart.target={x:dart.pos.x,y:dart.pos.y};
         }
       }
-      const target=dart.mode==='RETURN'?this.anchor.pos:dart.target;
+      const target=dart.mode==='RETURN'?this.anchor.pos:dart.mode==='ARC'?dart.arcTarget:dart.target;
       dart.updateDart(dt,target);
       if(dart.mode==='HOLD'){
         const near=Math.hypot(guitar.pos.x-dart.pos.x,guitar.pos.y-dart.pos.y)<160;
@@ -213,7 +223,8 @@ class RulerBossController {
     if(this.profile.key==='ONYX'){
       const held=this.chainDarts.find(d=>!d.isDead&&d.mode==='HOLD');
       if(held)return {kicker,action:'HOLD CLICK NEAR THE RED TIP',detail:'Build TUG, then RELEASE to return the dart.',progress:held.tugProgress};
-      return {kicker,action:this.phase.endsWith('_WARN')?'RED TRIANGLE INCOMING':'BREAK CHAIN LINKS · OR TUG THE TIP',
+      return {kicker,action:this.phase.endsWith('_WARN')?'RED TRIANGLE INCOMING':
+        this.phase==='B'?'EDGE DARTS CURVE IN · BREAK / TUG':'BREAK CHAIN LINKS · OR TUG THE TIP',
         detail:'Break enough links to turn the dart back.',progress:0};
     }
     if(this.profile.key==='NOVA'){const echo=this.echoes.find(e=>!e.isDead&&e.mode==='SEEK');
@@ -222,7 +233,7 @@ class RulerBossController {
     }
     if(this.phase==='RECOVER')return {kicker,action:'CATCH THE NEXT BEAT',detail:'Reposition and recharge for the next measure.',progress:0};
     const tune=this.phase.startsWith('B')?'HIGH':'LOW',phase=this.beatClock%1.2;
-    return {kicker,action:'SET '+tune+' · RELEASE ON THE FLASH',detail:'The beat is a brief opening. Missing it costs only Volume.',progress:phase/1.2};
+    return {kicker,action:'SET '+tune+' · RELEASE ON THE METRONOME FLASH',detail:'The pendulum marks the beat. Counter as the weight reaches its mark.',progress:phase/1.2};
   }
   getHint(){
     if(this.phase==='EXPOSED')return this.profile.coreTune+' · HIT CORE';
@@ -267,7 +278,7 @@ class RulerBossController {
       }
       if(this.phase==='A'||this.phase==='B'){
         this.cycle++;
-        if(this.profile.key==='ONYX')this.launchChains(guitar);
+        if(this.profile.key==='ONYX')this.launchChains(guitar,shaft);
         if(this.profile.key==='NOVA')this.echoLaunches=0;
         if(this.profile.key==='CADENCE'){this.beatClock=0;this.lastCounterBeat=-1;}
       }
@@ -295,13 +306,14 @@ class RulerBossController {
     for(const p of this.getLivePoints()){
       const dart=p.chainIndex!=null?this.chainDarts[p.chainIndex]:null;
       if(dart&&!dart.isDead){
-        const per=this.phase==='B'?38:54,u=(p.chainSlot+1)/(per+1);
+        const per=dart.slotCount||54,u=(p.chainSlot+1)/(per+1);
         const sway=Math.sin(u*Math.PI)*Math.sin(this.phaseTimer*8+u*12)*10;
         p.homeTarget.x=a.pos.x+(dart.pos.x-a.pos.x)*u+sway;
         p.homeTarget.y=a.pos.y+(dart.pos.y-a.pos.y)*u;
         p.resonance='MID';p.dangerous=dart.mode==='SEEK'&&this.staggerTimer===0&&!(this.cycle===1&&this.phase==='A'&&this.phaseTimer<1.4);
       }else{
-        const slot=rulerShapeSlot(this.profile.key,this.phase,p.bossSlotIndex,this.initialPointCount,this.phaseTimer);
+        const animationTime=this.profile.key==='CADENCE'&&['A','B'].includes(this.phase)?this.beatClock:this.phaseTimer;
+        const slot=rulerShapeSlot(this.profile.key,this.phase,p.bossSlotIndex,this.initialPointCount,animationTime);
         p.homeTarget.x=center.x+slot.x;p.homeTarget.y=center.y+slot.y;
         p.resonance=tune;
         const beatDanger=this.profile.key!=='CADENCE'||Math.min(this.beatClock%1.2,1.2-this.beatClock%1.2)<.24;
@@ -317,7 +329,18 @@ class RulerBossController {
       c.save();c.strokeStyle=this.profile.color;c.globalAlpha=.75;c.lineWidth=2;c.setLineDash([6,7]);
       c.beginPath();c.arc(this.focus.x,this.focus.y,225,0,Math.PI*2);c.stroke();c.setLineDash([]);
       c.fillStyle=this.profile.color;c.font='bold 14px monospace';c.textAlign='center';
-      c.fillText(this.getHint(),this.focus.x,this.focus.y-240);c.restore();
+      c.fillText(this.getHint(),this.focus.x,this.focus.y-240);
+      if(this.profile.key==='ONYX'&&this.phase==='B_WARN'){
+        c.strokeStyle='#ff718f';c.lineWidth=2;c.setLineDash([8,8]);
+        for(const side of [-1,1]){c.beginPath();
+          c.moveTo(this.focus.x+side*390,this.focus.y-180);
+          c.quadraticCurveTo(this.focus.x+side*240,this.focus.y-260,
+            this.focus.x+side*85,this.focus.y-30);c.stroke();}
+        c.beginPath();c.moveTo(this.focus.x,this.focus.y-390);
+        c.quadraticCurveTo(this.focus.x+105,this.focus.y-220,this.focus.x,this.focus.y-65);c.stroke();
+        c.setLineDash([]);
+      }
+      c.restore();
     }
     if(this.profile.key==='ONYX'&&this.chainDarts.length){
       c.save();c.strokeStyle='#ff315c';c.shadowColor='#ff315c';c.shadowBlur=13;c.lineWidth=2;
@@ -327,6 +350,12 @@ class RulerBossController {
         c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);
         for(const p of links)c.lineTo(p.pos.x,p.pos.y);
         c.lineTo(dart.pos.x,dart.pos.y);c.stroke();
+        if(dart.mode==='ARC'){
+          c.setLineDash([6,8]);c.globalAlpha=.7;c.beginPath();
+          c.moveTo(dart.pos.x,dart.pos.y);
+          c.quadraticCurveTo(dart.arcTarget.x,dart.arcTarget.y-85,
+            dart.arcTarget.x,dart.arcTarget.y);c.stroke();c.setLineDash([]);c.globalAlpha=1;
+        }
         if(dart.mode==='HOLD'){c.fillStyle='#ffe3e9';c.font='bold 11px monospace';c.textAlign='center';
           c.fillText('TUG '+Math.round(dart.tugProgress*100)+'%',dart.pos.x,dart.pos.y-35);}
       }c.restore();
@@ -339,8 +368,19 @@ class RulerBossController {
     }
     if(this.profile.key==='CADENCE'&&['A','B'].includes(this.phase)){
       const phase=this.beatClock%1.2,pulse=1-Math.min(1,phase/1.2);
+      const theta=Math.sin(this.beatClock/1.2*Math.PI*2)*.62;
       c.save();c.strokeStyle=this.profile.color;c.lineWidth=3;c.globalAlpha=.35+pulse*.65;
       c.beginPath();c.arc(this.anchor.pos.x,this.anchor.pos.y,40+pulse*48,0,Math.PI*2);c.stroke();
+      c.lineWidth=2;c.globalAlpha=.75;
+      for(const side of (this.phase==='B'?[-1,1]:[0])){
+        const pivotX=this.focus.x+side*(this.phase==='B'?125:0),pivotY=this.focus.y-155;
+        const swing=this.phase==='B'?side*theta:theta;
+        if(side===0){c.beginPath();c.moveTo(pivotX-175,pivotY+270);
+          c.lineTo(pivotX,pivotY);c.lineTo(pivotX+175,pivotY+270);c.closePath();c.stroke();}
+        c.lineWidth=5;c.beginPath();c.moveTo(pivotX,pivotY);
+        c.lineTo(pivotX+Math.sin(swing)*225,pivotY+Math.cos(swing)*225);c.stroke();
+        c.beginPath();c.arc(pivotX+Math.sin(swing)*225,pivotY+Math.cos(swing)*225,15,0,Math.PI*2);c.stroke();
+      }
       c.fillStyle=this.profile.color;c.font='bold 12px monospace';c.textAlign='center';
       c.fillText(phase<.24||phase>1.2-.24?'NOW':'WAIT FOR THE FLASH',this.anchor.pos.x,this.anchor.pos.y-120);c.restore();
     }

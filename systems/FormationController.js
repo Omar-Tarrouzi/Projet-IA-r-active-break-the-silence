@@ -17,6 +17,7 @@ class FormationController {
     this.tookDamage = false;
     this.warningTarget=null;
     this.paired=!!options.paired;
+    this.redirected=false;this.redirectCue=false;this.redirectTarget=null;
 
     // Dual-entity / Pincer support
 // Dual-entity support (PINCER and MURMURATION flanking)
@@ -33,7 +34,7 @@ class FormationController {
       this.anchor.currentScale = this.shapeDef.baseScale || 70;
     }
 
-    if(this.shapeKey==='SCISSORS')this.anchor.currentAngle=0;
+    if(this.shapeKey==='SCISSORS')this.anchor.currentAngle=Math.PI/2;
     this.initialPointCount = 0;
 
     // Check if murmuration
@@ -171,9 +172,10 @@ class FormationController {
           const aimVec = p5.Vector.sub(createVector(warning.x,warning.y), this.anchor.pos);
           this.anchor.currentAngle = aimVec.heading() - Math.PI / 2;
         } else if (this.shapeKey === 'HAMMER' || this.shapeKey === 'SCISSORS') {
-          const hover=createVector(warning.x,warning.y-150);
+          const sideways=this.shapeKey==='SCISSORS';
+          const hover=createVector(sideways?warning.x-145:warning.x,sideways?warning.y:warning.y-150);
           this.anchor.applyForce(this.anchor.arrive(hover));
-          this.anchor.currentAngle=this.shapeKey==='HAMMER'?-1.1:0;
+          this.anchor.currentAngle=sideways?Math.PI/2:-1.1;
         } else if (this.shapeKey === 'AXE') {
           // Arrive beside guitar and rear back
           const besidePos = createVector(warning.x - 120, warning.y - 100);
@@ -208,33 +210,55 @@ class FormationController {
           if (this.shapeKey === 'MURMURATION') for(const p of this.getLivePoints()) if(p.state==='HOMED')p.state='FLOCK';
           if (this.shapeKey === 'ARROW') {
             // Lock dash velocity!
+            this.redirected=false;this.redirectCue=false;this.redirectTarget=null;
             this.anchor.lockStrikeVelocity(createVector(warning.x,warning.y), 8.5);
           }
         }
         break;
 
       case 'STRIKE':
-        if (this.shapeKey !== 'ARROW') {
+        if (this.shapeKey !== 'ARROW' && this.shapeKey !== 'SCISSORS') {
           this.anchor.applyForce(this.anchor.arrive(createVector(this.anchor.pos.x,this.anchor.pos.y)));
           this.anchor.update();
         }
         if (this.shapeKey === 'ARROW') {
-          // Dash straight with locked velocity through steering force
-          if (this.anchor.lockedVelocity) {
-            const strikeForce = p5.Vector.sub(this.anchor.lockedVelocity, this.anchor.vel);
-            strikeForce.limit(this.anchor.maxForce);
-            this.anchor.applyForce(strikeForce);
+          // One readable correction after the player dodges the first committed line.
+          if(!this.redirected&&this.warningTarget&&this.phaseTimer>=.42&&
+            Math.hypot(guitar.pos.x-this.warningTarget.x,guitar.pos.y-this.warningTarget.y)>65){
+            this.redirected=true;this.redirectCue=true;
+            this.redirectTarget={x:guitar.pos.x,y:guitar.pos.y};
+            this.anchor.unlockStrike();
+          }
+          if(this.redirectCue&&this.phaseTimer>=.68){
+            this.redirectCue=false;
+            this.anchor.lockStrikeVelocity(createVector(this.redirectTarget.x,this.redirectTarget.y),10);
+          }
+          if(this.redirectCue){
+            const brake=velocityForce(this.anchor.vel,{x:0,y:0},this.anchor.maxForce);
+            this.anchor.applyForce(createVector(brake.x,brake.y));
+          }else if(this.anchor.lockedVelocity){
+            const strikeForce=velocityForce(this.anchor.vel,this.anchor.lockedVelocity,this.anchor.maxForce);
+            this.anchor.applyForce(createVector(strikeForce.x,strikeForce.y));
           }
           this.anchor.update();
-          if (this.phaseTimer >= 1.2 || this.anchor.pos.y > shaft.y + shaft.height) {
+          if (this.phaseTimer >= (this.redirected?1.75:1.2) || this.anchor.pos.y > shaft.y + shaft.height+50) {
             this.anchor.unlockStrike();
             this.phase = 'RECOVER';
             this.phaseTimer = 0;
           }
         } else if (this.shapeKey === 'HAMMER' || this.shapeKey === 'SCISSORS') {
-          const u=Math.min(1,this.phaseTimer/1.1);
-          if(this.shapeKey==='HAMMER')this.anchor.currentAngle=-1.1+(u*u*(3-2*u))*3.6;
-          if(this.phaseTimer>=1.4){this.phase='RECOVER';this.phaseTimer=0;}
+          if(this.shapeKey==='HAMMER'){
+            const u=Math.min(1,this.phaseTimer/1.45);
+            this.anchor.currentAngle=-1.1+5*u;
+          }else{
+            this.anchor.maxSpeed=5;this.anchor.maxForce=.36;
+            this.anchor.applyForce(this.anchor.seek(createVector(this.warningTarget.x+85,this.warningTarget.y)));
+            this.anchor.update();
+          }
+          if(this.phaseTimer>=1.5){
+            this.anchor.maxSpeed=3.5;this.anchor.maxForce=.25;
+            this.phase='RECOVER';this.phaseTimer=0;
+          }
         } else if (this.shapeKey === 'MURMURATION') {
           if(this.phaseTimer>=1.8){for(const p of this.getLivePoints())if(p.state==='FLOCK')p.state='HOMED';this.phase='RECOVER';this.phaseTimer=0;}
         } else if (this.shapeKey === 'AXE') {
@@ -481,6 +505,14 @@ class FormationController {
       c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);c.lineTo(w.x,w.y);c.stroke();
       c.setLineDash([]);c.fillStyle='#fff0d4';c.font='bold 12px monospace';c.textAlign='center';
       c.fillText(this.shapeKey+' / WIND-UP',w.x,w.y-53);c.restore();
+    }
+    if(this.shapeKey==='ARROW'&&this.redirectCue&&this.redirectTarget){
+      const c=drawingContext;c.save();c.strokeStyle='#ff5d72';c.lineWidth=3;
+      c.globalAlpha=.55+.35*Math.sin(this.phaseTimer*36)**2;c.setLineDash([5,5]);
+      c.beginPath();c.moveTo(this.anchor.pos.x,this.anchor.pos.y);
+      c.lineTo(this.redirectTarget.x,this.redirectTarget.y);c.stroke();c.setLineDash([]);
+      c.fillStyle='#fff0ee';c.font='bold 13px monospace';c.textAlign='center';
+      c.fillText('REDIRECT',this.redirectTarget.x,this.redirectTarget.y-48);c.restore();
     }
     if (this.isDual) {
       this.anchorLeft.show();

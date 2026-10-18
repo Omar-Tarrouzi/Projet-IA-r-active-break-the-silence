@@ -31,13 +31,26 @@ function rulerShapeSlot(kind,phase,index,count,time){
     const x=side*(110+Math.sin(v*Math.PI)*95);
     return {x:x*(phase==='B'?1-progress*.7:1),y:(v-.5)*430+Math.sin(time*4+v*8)*12};
   }
-  // Cadence: sweeping clock hands, then descending metronome bars.
+  // The whole finite swarm draws a metronome: frame, swinging rod and weighted bob.
+  const beat=time/1.2*Math.PI*2;
   if(phase.startsWith('A')){
-    const hand=index%4,v=Math.floor(index/4)/Math.ceil(count/4);
-    const angle=hand*Math.PI/2+time*(phase==='A'?.95:0);
-    return {x:Math.cos(angle)*(18+v*222),y:Math.sin(angle)*(18+v*222)};
+    const theta=Math.sin(beat)*.62;
+    if(index<48){const edge=index%3,t=Math.floor(index/3)/16;
+      const corners=[[-175,115],[0,-165],[175,115],[-175,115]];
+      return {x:corners[edge][0]+(corners[edge+1][0]-corners[edge][0])*t,
+        y:corners[edge][1]+(corners[edge+1][1]-corners[edge][1])*t};}
+    if(index<94){const v=(index-48)/45;
+      return {x:Math.sin(theta)*v*225,y:-155+Math.cos(theta)*v*225};}
+    const angle=(index-94)/Math.max(1,count-94)*Math.PI*2;
+    return {x:Math.sin(theta)*225+Math.cos(angle)*24,
+      y:-155+Math.cos(theta)*225+Math.sin(angle)*24};
   }
-  const lane=index%4,v=Math.floor(index/4)/Math.ceil(count/4);
-  return {x:(lane-1.5)*100+Math.sin(time*2+lane)*28,y:(v-.5)*420+(phase==='B'?progress*310-110:0)};
+  const side=index%2?-1:1,j=Math.floor(index/2),theta=side*Math.sin(beat)*.7;
+  const pivotX=side*125;
+  if(j<42){const v=j/41;return {x:pivotX+Math.sin(theta)*v*235,
+    y:-165+Math.cos(theta)*v*235};}
+  const angle=(j-42)/Math.max(1,Math.ceil(count/2)-42)*Math.PI*2;
+  return {x:pivotX+Math.sin(theta)*235+Math.cos(angle)*26,
+    y:-165+Math.cos(theta)*235+Math.sin(angle)*26};
 }
 if(typeof module!=='undefined')module.exports={RULER_BOSSES,rulerShapeSlot};

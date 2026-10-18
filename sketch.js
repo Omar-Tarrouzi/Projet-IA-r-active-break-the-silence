@@ -48,7 +48,7 @@ function preload() {
     'nova-idle','nova-command','nova-lunge','nova-shield',
     'cadence-idle','cadence-command','cadence-lunge','cadence-shield',
     'prop-chair','prop-lamp','prop-page','prop-headphones','prop-amp','prop-notes'];
-  for(const name of names){const key=name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());sceneAssets[key]=loadImage(base+name+'.webp');}
+  for(const name of names){const key=name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());sceneAssets[key]=loadImage(base+name+(name.startsWith('nova-')?'-v3.png':'.webp'));}
   sceneAssets.room=loadImage(base+'room-rpg-no-guitar.png');
 }
 
