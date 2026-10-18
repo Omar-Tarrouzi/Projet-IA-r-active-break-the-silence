@@ -64,7 +64,8 @@ class DemoPilot {
   const cone=tuning==='HIGH'?Math.abs(dx)<Math.max(26,-dy*.18):tuning==='MID'?Math.abs(dx)<Math.max(95,-dy*1.45):true;
   if(!fire&&focus&&!danger&&this.cooldown===0&&score.canFireBlast(power)&&dist<radius*.91&&
     (dy<0||tuning==='LOW')&&cone&&reason!=='TUG'&&reason!=='BEAT'&&(!boss||boss.phase!=='ENTRANCE')&&
-    (!boss||boss.phase!=='EXPOSED'||boss.profile||boss.coreVulnerable))fire=true;
+    (!boss||boss.phase!=='EXPOSED'||boss.profile||boss.coreVulnerable)&&
+    (!regular||!['FORMING','TELEGRAPH','ENCORE_WARN'].includes(regular.phase)))fire=true;
   if(fire&&!score.canFireBlast(power))fire=false;
   this.lastAction=reason;
   if(fire){this.cooldown=reason==='BEAT'?.72:reason==='TUG'?1.3:2.05;this.shots++;}
