@@ -99,6 +99,21 @@ class Guitar extends Vehicle {
     this.applyForce(safe?createVector(safe.x,safe.y):arriveForce);
   }
 
+  // Cinematic damage stays local to the Guitar Vehicle; physics still use Vehicle.update.
+  showBroken(){
+    const c=drawingContext,img=typeof spriteAtlas!=='undefined'?spriteAtlas?.images.get('guitar'):null;
+    c.save();c.translate(this.pos.x,this.pos.y);c.rotate(.4);
+    if(img){
+      const cut=Math.floor(img.height*.49);
+      c.save();c.translate(-8,-25);c.rotate(-.28);c.drawImage(img,0,0,img.width,cut,-19,-35,38,45);c.restore();
+      c.save();c.translate(12,21);c.rotate(.38);c.drawImage(img,0,cut,img.width,img.height-cut,-25,-20,50,55);c.restore();
+    }else{
+      c.fillStyle='#e67f58';c.fillRect(-5,-52,10,38);c.beginPath();c.moveTo(-27,14);c.lineTo(0,-13);c.lineTo(28,20);c.lineTo(0,40);c.fill();
+    }
+    c.strokeStyle='#fff3d5';c.lineWidth=2;c.beginPath();c.moveTo(-13,-4);c.lineTo(-3,4);c.lineTo(6,-3);c.lineTo(15,5);c.stroke();
+    c.strokeStyle='#74e9ff';c.globalAlpha=.65;c.beginPath();c.arc(3,1,34,Math.PI*.1,Math.PI*.8);c.stroke();
+    c.restore();
+  }
   show(scoreManager) {
     const c=drawingContext,t=frameCount/60,tuning=TUNINGS[this.currentTuning];
     const calm=typeof reduceMotion!=='undefined'&&reduceMotion;

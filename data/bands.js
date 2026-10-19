@@ -55,7 +55,8 @@ const BANDS = [
     shapes: ['HAMMER','SCISSORS','AXE','PINCER','HAND','JACKHAMMER','MURMURATION','SHURIKEN'],
     smartSwarms: true, bossAlt: 4000, bossWord: 'MEASURE', restWindow: 0.75,
     subtext: 'Keep your own rhythm against the final ruler.'
-  }
+  },
+  {name:'The Unwritten',minAlt:4200,maxAlt:Infinity,maxFormations:2,climbSpeed:18,shapes:['SHURIKEN','SCISSORS','HAMMER'],smartSwarms:true,bossAlt:4400,bossWord:'SONATA',restWindow:.9,subtext:'Four voices. One forbidden score.'}
 ];
 
 function getBandForAltitude(alt) {

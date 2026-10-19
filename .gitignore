@@ -9,6 +9,8 @@
 # Local tooling and generated captures
 node_modules/
 .cache/
+.browser-test/
+.remote-meta/
 coverage/
 *.log
 playwright_chromiumdev_profile-*/
@@ -22,3 +24,24 @@ qa-*.png
 Thumbs.db
 .vscode/
 .idea/
+
+# Local final-encounter media preparation and browser QA
+.video-tools/
+.sonata-browser/
+.sonata-*.cjs
+.inspect-video.py
+.prepare-video.py
+.art.py
+.sync-sonata.cjs
+sonata-preview.png
+video-contact.jpg
+pip-metadata-*/
+pip-unpack-*/
+pip-build-tracker-*/
+pip-ephem-wheel-cache-*/
+pip-install-*/
+pip-target-*/
+
+.hero-sheet.py
+.hero-sync.cjs
+hero-animation-preview.png

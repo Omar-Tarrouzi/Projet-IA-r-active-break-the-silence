@@ -3,7 +3,7 @@ const ATTACK_KINDS=['vesper','onyx','nova','cadence','onyxTip','novaCore','vespe
 function attackVisual(point){
   if(!point?.boss)return null;
   const key=point.boss.profile?.key||point.boss.bossWord;
-  const kind=key==='ONYX'?'onyx':key==='NOVA'?'nova':key==='CADENCE'?'cadence':key==='HUSH'?'vesper':null;
+  const kind=key==='ORPHEUS'?['vesper','onyx','nova','cadence'][point.sonataVoice??point.boss.voice]:key==='ONYX'?'onyx':key==='NOVA'?'nova':key==='CADENCE'?'cadence':key==='HUSH'?'vesper':null;
   if(!kind)return null;
   const phase=point.boss.phase||'';
   const beat=point.boss.beatClock||0;
@@ -11,7 +11,7 @@ function attackVisual(point){
     Math.min(beat%1.2,1.2-beat%1.2)<.24;
   const state=point.state==='STUNNED'?'break':
     point.missileIndex!=null&&point.resonance==='LOW'?'counter':
-    phase.endsWith('_WARN')||phase==='RECALL'?'warn':
+    phase.endsWith('_WARN')||phase==='WARNING'||phase==='RECALL'?'warn':
     beatWindow?'hit':point.dangerous?'active':'idle';
   const spearTip=kind==='vesper'&&['EDGE','SPEAR_WARN','LUNGE'].includes(phase)&&point.bossSlotIndex===0;
   return {kind:spearTip?'vesperTip':kind,state};

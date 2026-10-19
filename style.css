@@ -208,3 +208,48 @@ canvas{touch-action:none}
 @media(prefers-reduced-motion:reduce){.demo-wave i,.tutorial-wave i,.demo-panel.signal-flash{animation:none}}
 
 
+/* Three clear control choices and a focused, stoppable in-game tour. */
+.control-picker{margin-top:13px;text-align:left}
+.control-picker>.eyebrow{display:block;color:#a8f4dd;font-size:10px;margin-bottom:8px}
+.control-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.control-option{min-height:96px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;text-align:left;padding:10px;border:1px solid #59506c;border-radius:11px;background:linear-gradient(150deg,#252039ed,#121c2aec);color:#f7eadf}
+.control-option:hover{border-color:#9ecfc4;background:#273841}
+.control-option.selected{border-color:#82f5d4;box-shadow:0 0 0 1px #82f5d4,inset 0 0 22px #82f5d41a;background:#213c3c}
+.control-option .control-icon{font:26px/1 Georgia,serif;color:#82f5d4}
+.control-option b{font-size:10px;letter-spacing:.03em}
+.control-option small{font:9px/1.3 AscentMono,monospace;color:#c9c3d4}
+.control-picker #control-note{font:10px/1.35 AscentMono,monospace;color:#bad9d4;min-height:27px;margin:9px 0 0}
+.screen-content{width:min(100%,550px)}
+.screen:has(.control-picker:not([hidden])) .hero-stage{height:115px}
+.screen:has(.control-picker:not([hidden])) .hero-stage img{height:112px}
+.screen:has(.control-picker:not([hidden])) h1{font-size:clamp(48px,5vw,68px);margin:0 0 3px}
+.screen:has(.control-picker:not([hidden])) #screen-copy{font-size:12px;line-height:1.4;margin:4px 0}
+.screen:has(.control-picker:not([hidden])) .primary{margin-top:8px}
+.screen:has(.control-picker:not([hidden])) .practice-menu{font-size:9px;margin-top:7px}
+.tutorial{position:fixed;inset:0;z-index:30;pointer-events:none}
+.tutorial-spotlight{position:fixed;border:2px solid #82f5d4;border-radius:16px;box-shadow:0 0 0 250vmax #040812cf,0 0 24px #82f5d4a0;transition:left .25s,top .25s,width .25s,height .25s}
+.tutorial-card{pointer-events:auto;position:fixed;left:50%;bottom:4vh;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));padding:22px 24px;border:1px solid #82f5d4;border-radius:15px;background:linear-gradient(130deg,#203337f5,#141627f8);box-shadow:0 20px 65px #000b}
+.tutorial-card:before{content:'↗';position:absolute;top:-35px;left:50%;color:#82f5d4;font:30px Georgia,serif;text-shadow:0 0 12px #82f5d4}
+.tutorial-card h2{font-size:30px;margin:8px 0}
+.tutorial-card p{font-size:13px;line-height:1.5;color:#e6e5e9}
+.tutorial-actions{display:flex;justify-content:space-between;gap:10px;margin-top:17px}
+.tutorial-actions button{padding:10px 17px;border:1px solid #82f5d4;border-radius:8px;background:#82f5d4;color:#102b2a;font-weight:bold}
+#tutorial-skip{background:transparent;border-color:#707186;color:#d2cbda}
+@media(max-height:760px){.screen:has(.control-picker:not([hidden])) .hero-stage{height:65px}.screen:has(.control-picker:not([hidden])) .hero-stage img{height:60px}.control-option{min-height:76px}.screen:has(.control-picker:not([hidden])) .screen-content{padding:9px 18px}}
+@media(max-width:760px){.screen-content{width:100%;padding:12px}.control-options{gap:5px}.control-option{padding:7px;min-height:84px}.control-option .control-icon{font-size:19px}.control-option b{font-size:8px}.control-option small{font-size:7px}.control-picker #control-note{font-size:8px;min-height:20px}.tutorial-card{bottom:2vh;padding:14px 16px}.tutorial-card h2{font-size:23px}.tutorial-card p{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.tutorial-spotlight{transition:none}}
+/* Finale presentation stays inside the same arena; media loads only at 4400 m. */
+#finale-caption{position:absolute;left:8%;right:8%;bottom:8%;z-index:8;text-align:center;pointer-events:none;text-shadow:0 3px 20px #000}
+#finale-caption strong{display:block;font:800 clamp(22px,3.4vw,42px)/1.1 'Bahnschrift Condensed','Arial Narrow',sans-serif;letter-spacing:.12em;color:#f6dfa2}
+#finale-caption span{display:block;margin-top:9px;color:#d4f7f4;font:12px/1.5 AscentMono,monospace}
+#finale-caption:has(strong:empty){display:none}
+#skip-finale{position:absolute;right:18px;top:18px;z-index:10;border:1px solid #b6a17b;border-radius:6px;background:#0b1023d9;color:#f4ddb0;padding:10px;font:10px AscentMono,monospace}
+.finale-playing .rail{opacity:.2;pointer-events:none}
+.finale-playing #boss-hud,.finale-playing #combat-guide,.finale-playing #boss-intro,.finale-playing #mobile-bar,.finale-playing #demo-panel,.finale-playing #popups,.finale-playing .arena-top,.finale-playing .arena-bottom{visibility:hidden}
+.epilogue-playing #finale-caption{left:7%;right:7%;bottom:5.5%;padding:19px 22px 16px;border-top:1px solid #dcb982;background:linear-gradient(180deg,#120d12b5,#120d12e8);box-shadow:0 -12px 45px #0007}
+.epilogue-playing #finale-caption strong{color:#ffe4af;font-family:Georgia,serif;font-size:clamp(20px,2.8vw,32px);font-weight:600;letter-spacing:.09em}
+.epilogue-playing #finale-caption span{color:#f8e9d1;font:clamp(12px,1.6vw,17px)/1.45 Georgia,serif}
+.epilogue-playing #skip-finale{background:#241b19ed;color:#ffe5b7;border-color:#c6a475}
+#boss-intro[data-boss='SONATA']{background:linear-gradient(105deg,#120f20f5,#272038ed);border-color:#f3d49c}
+#boss-intro[data-boss='SONATA'] .boss-intro-lines{background:repeating-linear-gradient(110deg,transparent 0 22px,#f3d49c 23px,transparent 25px 42px)}
+@media(max-width:760px){#finale-caption strong{font-size:22px}#finale-caption span{font-size:10px}}

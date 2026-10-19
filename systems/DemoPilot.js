@@ -52,6 +52,7 @@ class DemoPilot {
       tuning=focus.resonance||'HIGH';reason='FINITE';
     }
   }
+  if(boss?.bossWord==='SONATA'){focus=boss.anchor;tuning='HIGH';target={x:boss.anchor.pos.x,y:clamp(boss.anchor.pos.y+260,shaft.y+shaft.height*.49,shaft.y+shaft.height*.78)};reason='SONATA';}
   const danger=live.flatMap(f=>f.getLivePoints().filter(p=>p.dangerous&&Math.hypot(p.pos.x-guitar.pos.x,p.pos.y-guitar.pos.y)<94)).sort((a,b)=>
     Math.hypot(a.pos.x-guitar.pos.x,a.pos.y-guitar.pos.y)-Math.hypot(b.pos.x-guitar.pos.x,b.pos.y-guitar.pos.y))[0];
   if(danger&&reason!=='TUG'&&reason!=='BEAT'){

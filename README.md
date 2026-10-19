@@ -2,11 +2,13 @@
 
 **Une guitare vivante. Quatre souverains. Une mélodie qu'il n'aurait jamais fallu jouer.**
 
+🎮 **[Jouer dans le navigateur](https://omar-tarrouzi.github.io/Projet-IA-r-active-break-the-silence/)**
+
 Un soir, un guitariste joue une mélodie maudite dans sa chambre. La lumière éclate, le ciel s'ouvre et des puissances venues d'ailleurs l'enlèvent. Son instrument, lui, reste derrière… mais la musique lui a donné vie. La guitare s'élance à sa rescousse, armée du pouvoir du ~~rock~~ **steering behaviour**.
 
 *ASCENT* est un jeu d'action 2D où l'on esquive, charge des ondes soniques et disperse des essaims de particules. Ces ennemis se regroupent en mains, marteaux, ciseaux et autres constructions avant d'attaquer. On peut jouer entièrement à la souris, ou laisser ses sons et claquements de mains entrer dans la partie.
 
-> Projet de **Master IA2 UNICA — IA réactive**, inspiré des comportements de pilotage de Craig Reynolds. Le jeu fonctionne directement dans le navigateur. **Version 2** : des boss plus lisibles, des attaques de feu bleu pour Nova et des formes qui annoncent leur cible avant de frapper.
+> Projet de **Master IA2 UNICA — IA réactive**, inspiré des comportements de pilotage de Craig Reynolds. Le jeu fonctionne directement dans le navigateur. Cette version ajoute le combat final, le retour du guitariste et une conclusion animée dans le moteur du jeu.
 
 ## Lancer le jeu
 
@@ -25,6 +27,7 @@ Pour partager le jeu via GitHub Pages, publiez la branche **main** depuis la rac
 | Action | Commande |
 | --- | --- |
 | Diriger la guitare | Déplacer la **souris** ; sur écran tactile, **glisser** le doigt |
+| Jouer avec la main | Choisir **CAMERA HAND** au démarrage, autoriser la caméra, déplacer la paume et pincer pour charger puis relâcher |
 | Charger puis lancer une onde | **Maintenir le clic gauche**, puis **relâcher** ; sur mobile, maintenir puis relâcher dans l'arène |
 | Choisir la fréquence | **1** = LOW (onde circulaire), **2** = MID (cône), **3** = HIGH (rayon concentré) |
 | Esquiver avec un dash | **Espace** ou **clic droit** ; bouton **DASH** sur mobile |
@@ -45,6 +48,7 @@ Chaque rencontre change la façon de jouer. Les souverains ne se contentent pas 
 | **Harm Onyx — 2 000 m** | Reine de la discorde. Des **fléchettes triangulaires** traînent des chaînes rouges. Brisez les maillons ou retenez la pointe en chargeant, puis relâchez pour lui retourner son arme. |
 | **Nova — 3 000 m** | Duc de l'écho. Son feu bleu forme des fragments et des impulsions qui reprennent la fréquence de votre dernière attaque. Reconnaissez la fréquence, sélectionnez la même et **parez l'écho** ; sa seconde volée couvre plusieurs voies. |
 | **Cadence — 4 000 m** | Souveraine de la mesure. Lisez le rythme, choisissez LOW ou HIGH selon la phase et **relâchez sur le flash** pour ouvrir une fenêtre d'attaque. |
+| **Orpheus — 4 400 m** *(spoiler)* | Auteur de la sonate interdite. Le premier acte brise la guitare ; le guitariste se libère et la restaure. Ensemble, ils affrontent sa seconde voix avant une conclusion qui révèle son histoire avec Eurydice. |
 
 Pour s'entraîner, le menu propose **Practice a Ruler**. La **démo autonome** (`?demo=1`) joue seule et explique les mécaniques en français : pratique pour découvrir le projet ou préparer une présentation.
 

@@ -1,5 +1,6 @@
 // Screen presentation only. The boss still moves solely through Vehicle steering.
 const BOSS_INTROS=Object.freeze({
+ SONATA:{sigil:'𝄞',kicker:'4400 M · FOUR VOICES. ONE CURSE.',color:'#f3d49c'},
  HUSH:{sigil:'♛',kicker:'1000 M · THE SILENCE TAKES ITS THRONE',color:'#c895ff'},
  MUTE:{sigil:'⛓',kicker:'2000 M · DISCORD BINDS THE SKY',color:'#ff718f'},
  ECHO:{sigil:'◇',kicker:'3000 M · THE ECHO ANSWERS BACK',color:'#74d9ff'},

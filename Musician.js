@@ -23,6 +23,12 @@ class Musician extends Vehicle {
     }else{const f=velocityForce(this.vel,{x:0,y:0},this.maxForce);this.applyForce(createVector(f.x,f.y));}
     super.update();
   }
+  showRescue(sheet,crouched){
+    if(!sheet?.complete||!sheet.naturalWidth){this.show();return;}
+    const c=drawingContext;c.save();c.translate(this.pos.x,this.pos.y);c.imageSmoothingEnabled=false;
+    c.drawImage(sheet,crouched?256:0,0,256,256,-74,-148,148,148);
+    c.restore();
+  }
   show() {
     const c=drawingContext,t=this.age;
     if(typeof sceneAssets!=='undefined'&&sceneAssets){

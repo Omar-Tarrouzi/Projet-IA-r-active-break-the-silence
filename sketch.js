@@ -15,6 +15,12 @@ let lastAudioAttack="";
 let lastIntroCueBoss=null;
 let clapDetector;
 let demoPilot=null;
+let onboarding=null;
+let handInput=null;
+let finaleSequence=null;
+let epilogueSequence=null;
+let finaleMedia=null;
+let sonataCheckpoint=false;
 
 let shockwaves = [];
 let alliedNotes = [];
@@ -105,6 +111,8 @@ function setup() {
   spriteAtlas=new SpriteAtlas(); attackAtlas=new AttackAtlas();
   document.getElementById("hero-guitar").src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(GUITAR_SVG);
   hud = new Hud();
+  onboarding = new Onboarding();
+  handInput = new HandInput();
   director = new Director(7391);
   audioSynth = new AudioSynth();
   musicDirector=new MusicDirector(audioSynth);
@@ -146,11 +154,15 @@ function setup() {
   randomSeed(7391);
   document.getElementById('play').onclick=()=>{
     demoPilot=null;
+    if(!onboarding.mode)onboarding.select('pointer');
+    if(onboarding.mode==='voice')clapDetector.start().then(()=>{if(clapDetector.permissionDenied)onboarding.setStatus('Microphone unavailable. Mouse attacks still work.');});
+    if(onboarding.mode==='hand')handInput.start().then(()=>{if(handInput.error){onboarding.setStatus('Camera unavailable. Mouse controls remain available.');if(onboarding.active)onboarding.render();}});
     if(isPaused){isPaused=false;return;}
-    if(scoreManager.gameOver||scoreManager.gameWon){startSession(lastDuel);return;}
+    if(scoreManager.gameWon){startOpening();return;}
+    if(scoreManager.gameOver){startSession(lastDuel);return;}
     lastDuel=false;startOpening();
   };
-  document.getElementById('duel').onclick=()=>{demoPilot=null;startSession(document.getElementById('boss-select').value);};
+  document.getElementById('duel').onclick=()=>{demoPilot=null;if(!onboarding.mode)onboarding.select('pointer');if(onboarding.mode==='voice')clapDetector.start();if(onboarding.mode==='hand')handInput.start();startSession(document.getElementById('boss-select').value);};
   document.getElementById('demo').onclick=()=>startDemo();
   document.getElementById('demo-boss').onclick=()=>startDemo(document.getElementById('boss-select').value);
   document.getElementById('demo-exit').onclick=stopDemo;
@@ -163,7 +175,7 @@ function setup() {
   document.getElementById('pause-button').onclick=()=>{if(hasStarted)isPaused=!isPaused;};
   document.getElementById('mobile-dash').onclick=()=>{const t=touchTarget||{x:mouseX,y:mouseY};if(guitar&&hasStarted&&guitar.performDash(createVector(t.x,t.y),shaft,scoreManager))audioSynth.playDash();};
   document.getElementById('mobile-mic').onclick=()=>{if(clapDetector.isListening)clapDetector.stop();else clapDetector.start();};
-  document.querySelector('.sound-tutorial').open=window.innerWidth>760;
+  document.getElementById('tutorial-replay').onclick=()=>{if(hasStarted&&!openingScene&&!demoPilot)onboarding.show(true);};
   document.getElementById('reduce-motion').checked=reduceMotion;
   document.getElementById('reduce-motion').onchange=e=>{reduceMotion=e.target.checked;document.body.classList.toggle("reduced",reduceMotion);};
   document.body.classList.toggle("reduced",reduceMotion);
@@ -172,15 +184,18 @@ function setup() {
   teacherMode=params.has('teacher');
   if(params.has('demo'))startDemo(params.get('demo'));
   else if(params.has('boss'))startSession(params.get('boss')||'HUSH');
+  else if(params.has('finale')){startSession('SONATA');onboarding.close();director.formations[0].setPhase('SACRIFICE');}
 }
 function startDemo(chapter='ASCENT'){
-  const duel=['HUSH','MUTE','ECHO','MEASURE'].includes(chapter)?chapter:false;
+  handInput?.stop();onboarding?.close();
+  const duel=['HUSH','MUTE','ECHO','MEASURE','SONATA'].includes(chapter)?chapter:false;
   if(clapDetector?.isListening)clapDetector.stop();
   demoPilot=new DemoPilot(duel||'ASCENT');
   if(duel)startSession(duel);else startOpening();
 }
 function stopDemo(){demoPilot=null;restartGame();hasStarted=false;document.body.classList.remove('playing');}
 function startOpening() {
+  sonataCheckpoint=false;
   restartGame();hasStarted=true;openingScene=new OpeningScene();
   document.getElementById('skip-opening').hidden=false;
   audioSynth.init();musicDirector.setVolume(musicDirector.volume);musicDirector.setScene('ASCENT');musicDirector.pause(false);
@@ -188,11 +203,15 @@ function startOpening() {
 function startSession(duel) {
   lastDuel=duel||false;restartGame(); hasStarted=true;document.body.classList.add("playing");
   document.getElementById('skip-opening').hidden=true;
-  if(duel){const word=typeof duel==='string'?duel:'HUSH';const alt=word==='HUSH'?1000:RULER_BOSSES[word]?.altitude||1000;
+  if(duel){const word=typeof duel==='string'?duel:'HUSH';const alt=word==='SONATA'?4400:word==='HUSH'?1000:RULER_BOSSES[word]?.altitude||1000;
     scoreManager.altitude=alt;scoreManager.lastClimbMeter=alt;director.waveTimer=999;
     for(const band of BANDS)if(band.bossWord&&band.bossAlt<alt)director.bossDefeated[band.bossWord]=true;
-    director.spawnBoss(word,shaft,font);}
+    director.spawnBoss(word,shaft,font);
+    if(word==='SONATA')scoreManager.sovereignPowers=['HUSH','MUTE','ECHO','MEASURE'];
+    if(word==='SONATA'&&sonataCheckpoint){finaleMedia=finaleMedia||new FinaleMedia();director.formations[0].beginFinalAct();guitar=new SoundHero(guitar.pos.x,guitar.pos.y,finaleMedia.hero);scoreManager.awaken();scoreManager.invulnerableTimer=3;}
+  }
   audioSynth.init();musicDirector.setVolume(musicDirector.volume);musicDirector.setScene(duel||'ASCENT');musicDirector.pause(false);
+  if(!demoPilot&&!params.has('demo')&&!params.has('boss'))onboarding.show();
 }
 
 
@@ -200,7 +219,35 @@ function windowResized() { /* CSS scales the fixed 800 × 900 playfield. */ }
 function draw() {
   if(demoPilot&&scoreManager?.gameOver)startSession(lastDuel);
   const start=performance.now(), dt=Math.min(0.05,deltaTime/1000);
-  const active=hasStarted&&!openingScene&&!isPaused&&!scoreManager.gameOver&&!(scoreManager.gameWon&&!scoreManager.endlessMode);
+  const finalBoss=director.formations.find(f=>f.bossWord==='SONATA'&&!f.isDead);
+  if(finalBoss){finaleMedia=finaleMedia||new FinaleMedia();lastDuel='SONATA';}
+  if(finalBoss?.phase==='SACRIFICE'&&!finaleSequence){finaleSequence=new FinaleSequence(finalBoss,finaleMedia);audioSynth.playDamage();screenShake=18;shockwaves=[];alliedNotes=[];hitParticles=[];}
+  if(finaleSequence){
+    background(0);image(backgroundLayer,0,0);finalBoss.show();
+    if(['IMPACT','RELEASE'].includes(finaleSequence.stage))guitar.showBroken();
+    finaleSequence.update(dt,guitar);finaleSequence.show();
+    musicDirector.setScene(['VIDEO','RETURN'].includes(finaleSequence.stage)?'TRIUMPH':'SONATA');musicDirector.pause(document.hidden||(finaleSequence.stage==='VIDEO'&&!finaleMedia.video.muted));musicDirector.tick();
+    if(finaleSequence.finished){
+      guitar=new SoundHero(finaleSequence.target.x,finaleSequence.target.y,finaleMedia.hero);
+      guitar.setTuning('HIGH');scoreManager.awaken();scoreManager.invulnerableTimer=3;
+      sonataCheckpoint=true;finalBoss.beginFinalAct();finaleSequence=null;simulationClock.reset();
+    }
+    return;
+  }
+  if(finalBoss?.act===2&&finalBoss.phase==='DEFEAT'&&!finalBoss.isCleared&&!epilogueSequence){
+    epilogueSequence=new EpilogueSequence(finalBoss,null,guitar);
+    shockwaves=[];alliedNotes=[];hitParticles=[];simulationClock.reset();
+  }
+  if(epilogueSequence){
+    epilogueSequence.update(dt);epilogueSequence.show();
+    const epilogueBeat=epilogueSequence.scene?.key;
+    musicDirector.setScene(['REVEAL','THANKS','FADE','NORMALIZE','RIDE','HOME','REST'].includes(epilogueBeat)?'TRIUMPH':epilogueBeat==='CRACK'?'SONATA':'');
+    musicDirector.pause(document.hidden);musicDirector.tick();
+    if(epilogueSequence.finished){guitar=epilogueSequence.travelGuitar;epilogueSequence.dispose();epilogueSequence=null;finalBoss.completeEpilogue();simulationClock.reset();}
+    return;
+  }
+  if(onboarding?.mode==='hand')handInput?.tick(start);
+  const active=hasStarted&&!openingScene&&!isPaused&&!onboarding?.active&&!scoreManager.gameOver&&!(scoreManager.gameWon&&!scoreManager.endlessMode);
   if(openingScene){let done=false;simulationClock.advance(dt,step=>{if(openingScene&&openingScene.update(step))done=true;});if(done)startSession(false);}
   else if(active) simulationClock.advance(dt,updateGame); else simulationClock.reset();
   const boss=director.formations.find(f=>f.isBoss&&!f.isDead);
@@ -226,10 +273,10 @@ function draw() {
   for(const mote of spaceMotes)mote.show();
   drawingContext.save();drawingContext.globalAlpha=.25;for(const relic of roomRelics)relic.show();drawingContext.restore();
   director.pickups.forEach(p=>p.show(guitar));
-  director.formations.forEach(f=>f.show());
+  director.formations.forEach(f=>{if(!f.isDead)f.show();});
   alliedNotes.forEach(n=>n.show()); shockwaves.forEach(sw=>sw.show());
   hitParticles.forEach(p=>p.show());
-  if(hasStarted)guitar.show(scoreManager);
+  if(hasStarted&&!(scoreManager.gameWon&&!scoreManager.endlessMode))guitar.show(scoreManager);
   if(teacherMode)drawTeacher();
   pop();
   hud.update(active?dt:0);hud.draw(scoreManager,guitar,director,shaft,clapDetector);
@@ -320,18 +367,20 @@ function updateGame(dt) {
   // Score & Resource updates
   const pendingBoss=BANDS.find(b=>b.bossWord&&!director.bossDefeated[b.bossWord]&&scoreManager.altitude>=b.bossAlt);
   scoreManager.update(dt, director.bossActive||pendingBoss?0:climbSpeed, closestEnemyDist < Infinity ? closestEnemyDist : null);
-  if(!director.bossDefeated.MEASURE)scoreManager.gameWon=false;
-  if(director.bossDefeated.MEASURE && scoreManager.altitude>=4000)scoreManager.gameWon=true;
+  if(!director.bossDefeated.SONATA)scoreManager.gameWon=false;
+  if(director.bossDefeated.SONATA)scoreManager.gameWon=true;
 
   // Player input: steer guitar to cursor
   const demoAction=demoPilot?.decide(dt,guitar,scoreManager,director.formations,director.pickups,shaft);
-  const inputTarget=demoAction?.target||touchTarget||{x:mouseX,y:mouseY};
+  const inputTarget=demoAction?.target||(onboarding?.mode==='hand'?handInput?.target:null)||touchTarget||{x:mouseX,y:mouseY};
   if(demoAction)guitar.setTuning(demoAction.tuning);
   guitar.steerToCursor(createVector(inputTarget.x,inputTarget.y), shaft);
   guitar.update(dt, shaft);
 
   // Guitar blast charging (mouse fallback)
-  const isHoldingLeft = demoAction?demoAction.hold:touchCharging || (pointerCharging && mouseIsPressed && mouseButton === LEFT);
+  const handRelease=onboarding?.mode==='hand'&&handInput?.takeRelease();
+  if(handRelease&&guitar.isCharging){const ratio=guitar.chargeDuration/guitar.maxChargeTime;fireSonicBlast(ratio,false);}
+  const isHoldingLeft = demoAction?demoAction.hold:touchCharging || (pointerCharging && mouseIsPressed && mouseButton === LEFT) || (onboarding?.mode==='hand'&&handInput?.pinch);
   if(!clapDetector.isSustainedMode)guitar.updateCharge(isHoldingLeft, dt, scoreManager.canFireBlast(0));
   if(demoAction?.fire){fireSonicBlast(demoAction.power,false,demoAction.tuning);guitar.updateCharge(false,0,true);}
 
@@ -377,7 +426,7 @@ function updateGame(dt) {
       // Check contact damage with player during active attack or flock
       if (!pt.isDead && pt.state !== 'STUNNED' && !pt.isConverted && (pt.boss ? pt.dangerous : form.phase==='STRIKE'||form.phase==='ENCORE'||pt.state==='FLOCK')) {
         const distToPlayer = p5.Vector.dist(pt.pos, guitar.pos);
-        if (distToPlayer < pt.r + guitar.r) {
+        if (distToPlayer < pt.r + guitar.r && (!form.canContactPlayer || form.canContactPlayer())) {
           // Check if player has an active Quarter shield note to absorb hit
           const shieldNote = alliedNotes.find(n => n.kind === 'QUARTER' && !n.isDead);
           if (shieldNote) {
@@ -389,6 +438,8 @@ function updateGame(dt) {
           } else {
             const hitTaken = scoreManager.takeDamage(form.shapeDef.contactDamage || 12);
             if (hitTaken) {
+              form.onPlayerHit?.();
+              if(form.bossWord==='SONATA'&&form.act===1&&scoreManager.gameOver){form.triggerBreak();scoreManager.gameOver=false;scoreManager.tune=1;}
               form.tookDamage = true;
               audioSynth.playDamage();
               screenShake = 12;
@@ -564,7 +615,7 @@ function updateGame(dt) {
 
 // Fire a sonic blast triggered by clap (MID), sustained noise (HIGH), or mouse release
 function fireSonicBlast(power = 1.0, triggerType = false, forcedTuningKey = null) {
-  if (!guitar || !hasStarted || isPaused || scoreManager.gameOver || (scoreManager.gameWon&&!scoreManager.endlessMode)) return;
+  if (!guitar || !hasStarted || isPaused || finaleSequence || epilogueSequence || scoreManager.gameOver || (scoreManager.gameWon&&!scoreManager.endlessMode)) return;
 
   const tuningKey = forcedTuningKey || guitar.currentTuning;
   guitar.setTuning(tuningKey);
@@ -573,9 +624,12 @@ function fireSonicBlast(power = 1.0, triggerType = false, forcedTuningKey = null
 
   if (scoreManager.canFireBlast(chargeRatio)) {
     scoreManager.consumeBlastVolume(chargeRatio);
+    guitar.onBlast?.(chargeRatio);
 
     const isHarmonized = scoreManager.consumeHarmonizeCharge();
     const sw = new Shockwave(guitar.pos.x, guitar.pos.y - 12, tuning, chargeRatio, isHarmonized);
+    sw.awakened=!!guitar.awakened;
+    if(sw.awakened)sw.maxRadius*=guitar.blastReach;
     shockwaves.push(sw);
     for(const form of director.formations)if(form.onPlayerBlast)form.onPlayerBlast(sw);
 
@@ -648,8 +702,11 @@ function mouseWheel(event) {
 }
 
 function keyPressed() {
+  if(finaleSequence){if(keyCode===ESCAPE)finaleSequence.skip();return;}
+  if(epilogueSequence){if(keyCode===ESCAPE)epilogueSequence.skip();return;}
   if(demoPilot){if(keyCode===ESCAPE)stopDemo();return;}
   if(openingScene){if(keyCode===ESCAPE)startSession(false);return;}
+  if(onboarding?.active){if(keyCode===ESCAPE)onboarding.close();return;}
   if(document.activeElement?.tagName==='INPUT')return;
   if(key==='x'||key==='X'){teacherMode=!teacherMode;return;}
   if(key==='.'&&isPaused){updateGame(1/60);return;}
@@ -660,7 +717,7 @@ function keyPressed() {
   else if (key === '3') guitar.setTuning('HIGH');
   else if (key === 'p' || key === 'P' || keyCode === ESCAPE) isPaused = !isPaused;
   else if (key === 'd' || key === 'D') teacherMode = !teacherMode;
-  else if (key === 'r' || key === 'R') restartGame();
+  else if (key === 'r' || key === 'R') {if(lastDuel==='SONATA')startSession('SONATA');else restartGame();}
   else if (key === 'm' || key === 'M') {
     if (clapDetector) {
       if (clapDetector.isListening) clapDetector.stop();
@@ -684,6 +741,8 @@ function keyPressed() {
 }
 
 function restartGame() {
+  if(finaleSequence){finaleSequence.dispose();finaleSequence=null;}
+  if(epilogueSequence){epilogueSequence.dispose();epilogueSequence=null;}
   openingScene=null;isPaused=false;lastAudioAttack="";pointerCharging=false;touchCharging=false;touchTarget=null;simulationClock.reset();randomSeed(7391);
   scoreManager.reset();
   guitar = new Guitar(shaft.x + shaft.width * 0.5, shaft.y + shaft.height * 0.78);

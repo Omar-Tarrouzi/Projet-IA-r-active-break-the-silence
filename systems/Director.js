@@ -15,7 +15,8 @@ class Director {
       HUSH: false,
       MUTE: false,
       ECHO: false,
-      MEASURE: false
+      MEASURE: false,
+      SONATA: false
     };
     this.bossActive = false;
     this.restTimer = 0;
@@ -113,7 +114,7 @@ class Director {
     const spawnX = shaft.x + shaft.width * 0.5;
     const spawnY = shaft.y - 120;
 
-    const bossController = bossWord==='HUSH'?new BossController(spawnX,spawnY,{bossWord}):new RulerBossController(spawnX,spawnY,{bossWord});
+    const bossController = bossWord==='SONATA'?new SonataController(spawnX,spawnY):bossWord==='HUSH'?new BossController(spawnX,spawnY,{bossWord}):new RulerBossController(spawnX,spawnY,{bossWord});
     this.formations.push(bossController);
   }
 
@@ -121,6 +122,7 @@ class Director {
     if (controller.isBoss) {
       this.bossActive = false;
       this.bossDefeated[controller.bossWord] = true;
+      if(controller.bossWord!=='SONATA'&&scoreManager.sovereignPowers&&!scoreManager.sovereignPowers.includes(controller.bossWord))scoreManager.sovereignPowers.push(controller.bossWord);
       this.waveTimer=Math.min(this.waveTimer,.45);
       scoreManager.healTune(30);
       scoreManager.addHarmonizeCharge();

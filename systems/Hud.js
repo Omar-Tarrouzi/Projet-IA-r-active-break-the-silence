@@ -19,16 +19,16 @@ class Hud {
     this.text('band',openingScene?'BEDROOM':director.currentBand.name.toUpperCase());
     const next=BANDS.find(b=>b.bossWord&&!director.bossDefeated[b.bossWord]);
     this.text('milestone',next?next.bossAlt+' M — UNKNOWN SIGNAL':'ALL RULERS BROKEN');this.text('altitude',Math.floor(score.altitude).toString().padStart(4,'0'));
-    this.bar('altitude-fill',score.altitude/4000);this.text('score',Math.floor(score.score).toString().padStart(6,'0'));
+    this.bar('altitude-fill',score.altitude/4400);this.text('score',Math.floor(score.score).toString().padStart(6,'0'));
     this.text('risk','×'+score.dissonance.toFixed(1));this.text('tune',Math.ceil(score.tune));
     this.text('clean-streak','CLEAN BREAKS '+score.cleanStreak%3+'/3 · OVERTURE');
-    const strings=Math.ceil(score.tune/100*6);
+    const strings=Math.ceil(score.tune/score.maxTune*6);
     if(this.cache.get('strings')!==strings){this.strings.forEach((n,i)=>n.classList.toggle('broken',i>=strings));this.cache.set('strings',strings);}
-    this.text('volume',Math.floor(score.volume)+'%');this.bar('volume-fill',score.volume/100);
+    this.text('volume',score.unlimitedAmplifier?'∞':Math.floor(score.volume)+'%');this.bar('volume-fill',score.unlimitedAmplifier?1:score.volume/100);
     this.text('dash',guitar.dashCooldown>0?'DASH '+guitar.dashCooldown.toFixed(1)+'s':'DASH READY');
     this.text('combo',score.combo>=2?'COMBO ×'+score.combo:'BREAK THE SILENCE');this.text('harmony',score.harmonizeCharges);
     if(this.cache.get('tuning')!==guitar.currentTuning){this.tunings.forEach(n=>n.classList.toggle('active',n.dataset.tuning===guitar.currentTuning));this.cache.set('tuning',guitar.currentTuning);}
-    this.text('mobile-life',Math.ceil(score.tune));this.text('mobile-volume',Math.floor(score.volume));
+    this.text('mobile-life',Math.ceil(score.tune));this.text('mobile-volume',score.unlimitedAmplifier?'∞':Math.floor(score.volume));
     const boss=director.formations.find(f=>f.isBoss&&!f.isDead);
     const demo=typeof demoPilot!=='undefined'&&demoPilot;
     this.nodes['demo-panel'].hidden=!demo;
@@ -67,6 +67,12 @@ class Hud {
       const shield=Math.max(0,Math.min(1,count/boss.initialPointCount));
       this.bar('boss-fill',reforming?Math.max(0,(hits-boss.coreHits-.5+shield*.5)/hits):exposed?(hits-boss.coreHits)/hits:shield);
       this.text('boss-count',reforming?'CORE '+boss.coreHits+'/'+hits+' · SWARM '+count:exposed?'CORE '+(hits-boss.coreHits)+' / '+hits:count+' / '+boss.initialPointCount);this.text('boss-phase',(boss.getAct?'ACT '+boss.getAct()+' · ':'')+boss.phase.replaceAll('_',' '));this.text('boss-counter',boss.getHint?boss.getHint():boss.profile?(exposed?boss.profile.coreTune+' · HIT CORE':boss.phase.endsWith('_WARN')?'MATCH '+(boss.phase.startsWith('A')?boss.profile.attackATune:boss.profile.attackBTune)+' · BREAK FORM':boss.phase==='A'||boss.phase==='B'?'DODGE · SHATTER PARTICLES':'PREPARE'):['SHIELD','RECALL'].includes(boss.phase)?'MID · BREAK GUARD':['HAND','HAND_WARN'].includes(boss.phase)?'LOW · BREAK GRASP':['MISSILE','MISSILE_WARN'].includes(boss.phase)?'MATCH COLOUR · PARRY':['ORBIT','ORBIT_WARN'].includes(boss.phase)?'FIND THE GAP':exposed?'CHARGE HIGH · HIT CORE':'HIGH · PIERCE');}
+    if(boss?.bossWord==='SONATA'){
+      this.bar('boss-fill',boss.hp/boss.maxHp);
+      this.text('boss-count',Math.ceil(boss.hp)+' / '+boss.maxHp);
+      this.text('boss-phase',boss.act===1?'THE FORBIDDEN SONATA':'ORPHEUS · THE MAN WHO LOOKED BACK');
+      this.text('boss-counter',['RECOVER','EXPOSED'].includes(boss.phase)?'CORE OPEN · STRIKE':'BREAK THE VOICES · DODGE');
+    }
     const live=hasStarted&&!openingScene&&!isPaused&&!score.gameOver&&!(score.gameWon&&!score.endlessMode);
     const regular=director.formations.find(f=>!f.isBoss&&!f.isDead&&['TELEGRAPH','STRIKE'].includes(f.phase));
     let guide=boss?.getGuide?.();
@@ -82,17 +88,20 @@ class Hud {
     this.bar('mic-fill',Math.min(1,(mic?.currentLevel||0)*3));
     this.nodes['mic-threshold'].style.transform='translateX('+Math.min(100,(mic?.threshold||.18)*300)+'px)';
     this.text('mic-status',mic?.permissionDenied?'Microphone unavailable · mouse controls ready':mic?.isListening?'LISTENING · '+Math.round(mic.currentLevel*100)+'%':'Optional · clap to blast, sing to charge');
-    this.text('session-status',openingScene?'ORIGIN / THE ROOM':director.bossActive?'BOSS ENCOUNTER':isPaused?'SESSION PAUSED':'LIVE / '+Math.floor(score.altitude)+' M');
+    const handStatus=onboarding?.mode==='hand'&&!demo&&!openingScene?(handInput?.error?'CAMERA OFF · MOUSE READY':handInput?.loading?'CAMERA / LOADING':handInput?.ready?(handInput.target?'HAND / TRACKING':'HAND / SHOW PALM'):'CAMERA / READY'):null;
+    this.text('session-status',openingScene?'ORIGIN / THE ROOM':director.bossActive?'BOSS ENCOUNTER':isPaused?'SESSION PAUSED':handStatus||'LIVE / '+Math.floor(score.altitude)+' M');
     const state=!hasStarted?'title':score.gameOver?'over':score.gameWon&&!score.endlessMode?'won':isPaused?'pause':'play';
     if(this.cache.get('screen')===state)return;this.cache.set('screen',state);
     document.body.classList.toggle('paused',state!=='play');
     this.nodes.screen.hidden=state==='play';
+    document.getElementById('control-picker').hidden=state!=='title';
+    this.nodes.play.disabled=state==='title'&&!onboarding?.mode;
     if(state==='play')return;
     const copy={title:['ASCENT','A GUITAR AGAINST THE SILENCE','They become weapons. You become the sound that breaks them.','BEGIN ASCENT ↗'],
       pause:['PAUSED','LET THE ECHO SETTLE','Your next note is waiting.','RESUME SESSION ↗'],
       over:['SILENCED','THE LAST STRING BROKE',Math.floor(score.altitude)+' metres · '+Math.floor(score.score)+' points','TRY AGAIN ↗'],
-      won:['ENCORE','THE SUMMIT IS YOURS',Math.floor(score.score)+' points. The Silence has fallen.','PLAY AGAIN ↗']}[state];
-    this.text('screen-title',copy[0]);this.text('screen-kicker',copy[1]);this.text('screen-copy',copy[2]);this.text('play',copy[3]);this.nodes.duel.hidden=state==='pause';document.querySelector('.practice-menu').hidden=state==='pause';
+      won:['ENCORE','THE LAST NOTE IS FREE','Orpheus can finally answer Eurydice. The guitarist and his living guitar are home, with a world of songs left to play.','PLAY AGAIN ↗']}[state];
+    this.text('screen-title',copy[0]);this.text('screen-kicker',copy[1]);this.text('screen-copy',copy[2]);this.text('play',state==='title'&&!onboarding?.mode?'CHOOSE A CONTROL ↗':copy[3]);this.nodes.duel.hidden=state==='pause';document.querySelector('.practice-menu').hidden=state==='pause';
   }
 }
 if(typeof module!=='undefined')module.exports={Hud};

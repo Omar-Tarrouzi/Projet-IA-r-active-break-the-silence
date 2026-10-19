@@ -1,5 +1,6 @@
 // Six original four-bar motifs. MIDI pitches are score data, never Vehicle positions.
 const MUSIC_THEMES=Object.freeze({
+ SONATA:{bpm:116,root:45,mode:[0,1,3,5,7,8,10],chords:[0,5,1,7],bass:[0,0,7,1,0,5,7,0],lead:[19,-1,20,19,15,-1,13,12,19,20,24,-1,22,19,15,13],arp:[0,7,12,15,1,8,13,19],drums:'K-h-S-h-KK--S-h-',feel:'discord'},
  ASCENT:{bpm:128,root:50,mode:[0,2,3,5,7,9,10],chords:[0,5,3,7],bass:[0,0,7,0,0,7,5,7],lead:[12,-1,15,-1,17,15,12,-1,10,-1,12,15,17,-1,15,-1],arp:[0,7,12,7,3,7,12,7],drums:'K--hS-h-K-h-S-h-',feel:'drive'},
  HUSH:{bpm:96,root:47,mode:[0,1,3,5,7,8,10],chords:[0,1,5,0],bass:[0,-1,0,7,0,-1,1,7],lead:[19,-1,-1,18,15,-1,13,-1,12,-1,13,-1,8,-1,-1,-1],arp:[0,-1,7,-1,12,-1,7,-1],drums:'K---S---K-h-S---',feel:'silence'},
  MUTE:{bpm:146,root:50,mode:[0,1,3,5,7,8,10],chords:[0,1,3,1],bass:[0,0,1,0,7,1,0,10],lead:[12,-1,13,15,-1,13,12,-1,10,12,-1,8,7,-1,8,-1],arp:[0,7,13,7,1,8,13,8],drums:'K-h-S-h-KK--S-h-',feel:'discord'},

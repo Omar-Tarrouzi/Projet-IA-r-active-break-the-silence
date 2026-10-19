@@ -1,6 +1,7 @@
 // French captions explain only mechanics that actually run in this project.
 function demoCommentary({opening=false,boss=null,regular=null,action='SEEK',time=0,shots=0}){
  if(opening)return {id:'ORIGIN',tag:'ARCHIVE // ORIGINE',title:'UNE CHANSON INTERDITE',body:'Le guitariste joue. Quatre puissances l’emportent. Sa guitare prend vie et monte à sa poursuite.',formula:'SÉQUENCE CINÉMATIQUE · ACTEURS PILOTÉS PAR STEERING'};
+ if(boss?.bossWord==='SONATA')return {id:'SONATA'+boss.phase,tag:'FINALE // LA SONATE INTERDITE',title:boss.act===2?'ORPHÉE RÉVÉLÉ':'QUATRE VOIX, UNE MALÉDICTION',body:'Les pouvoirs des souverains se combinent. Briser les particules ouvre le noyau; la transformation relance un second acte jouable.',formula:'FORMATION + ARRIVE · FORCES BORNÉES · LOCOMOTION VEHICLE'};
  if(boss){
   const name=boss.profile?.name||'VESPER';
   if(boss.phase==='ENTRANCE')return {id:'INTRO'+name,tag:'SIGNAL // SOUVERAIN',title:name+' DÉTECTÉ',body:'Ses particules forment une réserve finie : chaque point détruit manque aux constructions suivantes.',formula:'FORMATION → ARRIVE → APPLY FORCE'};

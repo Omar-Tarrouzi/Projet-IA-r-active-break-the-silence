@@ -6,6 +6,7 @@ class ScoreManager {
     this.maxTune = 100;
     this.volume = 100;
     this.maxVolume = 100;
+    this.unlimitedAmplifier = false;
     this.dissonance = 1.0;
     this.score = 0;
     this.altitude = 0;
@@ -20,10 +21,14 @@ class ScoreManager {
     this.maxComboTimer = 2.4;
     this.gameOver = false;
     this.gameWon = false;
+    this.sovereignPowers=[];
     this.endlessMode = false;
   }
 
   reset() {
+    this.maxTune = 100;
+    this.maxVolume = 100;
+    this.unlimitedAmplifier = false;
     this.tune = 100;
     this.volume = 100;
     this.dissonance = 1.0;
@@ -38,7 +43,16 @@ class ScoreManager {
     this.pickupChain=0;this.pickupChainTimer=0;
     this.gameOver = false;
     this.gameWon = false;
+    this.sovereignPowers=[];
     this.endlessMode = false;
+  }
+
+  awaken(){
+    this.maxTune=125;
+    this.tune=125;
+    this.unlimitedAmplifier=true;
+    this.volume=this.maxVolume;
+    this.gameOver=false;
   }
 
   getTier() {
@@ -57,13 +71,10 @@ class ScoreManager {
       this.lastClimbMeter = currentMeter;
     }
 
-    // Win condition check
-    if (this.altitude >= 4000 && !this.gameWon && !this.endlessMode) {
-      this.gameWon = true;
-    }
+    // Victory is awarded by the final encounter, never by altitude alone.
 
     // Volume regeneration (10/sec)
-    this.volume = Math.min(this.maxVolume, this.volume + 10 * dt);
+    this.volume = this.unlimitedAmplifier ? this.maxVolume : Math.min(this.maxVolume, this.volume + 10 * dt);
 
     // Combo timer decay
     if (this.comboTimer > 0) {
@@ -90,17 +101,18 @@ class ScoreManager {
 
   canFireBlast(chargeRatio = 0) {
     const cost = 20 + 30 * chargeRatio;
-    return this.volume >= cost;
+    return this.unlimitedAmplifier || this.volume >= cost;
   }
 
   consumeBlastVolume(chargeRatio = 0) {
+    if(this.unlimitedAmplifier)return 0;
     const cost = 20 + 30 * chargeRatio;
     this.volume = Math.max(0, this.volume - cost);
     return cost;
   }
 
   refundVolume(amount) {
-    this.volume = Math.min(this.maxVolume, this.volume + amount);
+    this.volume = this.unlimitedAmplifier ? this.maxVolume : Math.min(this.maxVolume, this.volume + amount);
   }
 
   takeDamage(amount) {
