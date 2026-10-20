@@ -253,3 +253,19 @@ canvas{touch-action:none}
 #boss-intro[data-boss='SONATA']{background:linear-gradient(105deg,#120f20f5,#272038ed);border-color:#f3d49c}
 #boss-intro[data-boss='SONATA'] .boss-intro-lines{background:repeating-linear-gradient(110deg,transparent 0 22px,#f3d49c 23px,transparent 25px 42px)}
 @media(max-width:760px){#finale-caption strong{font-size:22px}#finale-caption span{font-size:10px}}
+
+/* Use the narrow screen for readable controls without stretching the 800 x 900 arena. */
+@media(max-width:760px){
+  .mobile-bar{gap:5px;padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+  .mobile-bar span:first-child{grid-column:1 / span 2;grid-row:1;text-align:left}
+  .mobile-bar span:nth-child(2){grid-column:4 / span 2;grid-row:1;text-align:right}
+  .mobile-bar button{min-height:44px;font-size:11px}
+  .mobile-bar button[data-tuning=LOW],.mobile-bar button[data-tuning=MID],.mobile-bar button[data-tuning=HIGH],.mobile-bar button#mobile-dash,.mobile-bar button#mobile-mic{grid-row:2}
+  .combat-guide{bottom:100px}
+  .control-option b{font-size:clamp(9px,2.4vw,11px)}
+  .control-option small{font-size:clamp(8px,2.1vw,10px)}
+  .control-picker #control-note{font-size:10px}
+  .tutorial-card p{font-size:12px}
+}
+@media(max-width:760px) and (max-height:600px){.mobile-bar button{min-height:38px}.combat-guide{bottom:88px}}
+
