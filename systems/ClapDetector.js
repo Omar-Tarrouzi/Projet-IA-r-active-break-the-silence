@@ -16,6 +16,8 @@ class ClapDetector {
     this.dataArray = null;
 
     this.isListening = false;
+    this.loading = false;
+    this.requestId = 0;
     this.hasPermission = false;
     this.permissionDenied = false;
 
@@ -37,7 +39,9 @@ class ClapDetector {
   }
 
   async start() {
-    if (this.isListening) return;
+    if (this.isListening || this.loading) return;
+    this.loading = true;
+    const requestId = ++this.requestId;
 
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -53,6 +57,10 @@ class ClapDetector {
           autoGainControl: false
         }
       });
+      if (requestId !== this.requestId) {
+        this.stop();
+        return;
+      }
 
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.analyser = this.audioContext.createAnalyser();
@@ -69,16 +77,23 @@ class ClapDetector {
       console.warn('Microphone permission / access error:', err);
       this.permissionDenied = true;
       this.isListening = false;
+      this.stop();
+    } finally {
+      this.loading = false;
     }
   }
 
   stop() {
+    this.requestId++;
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach(t => t.stop());
     }
     if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close();
     }
+    this.mediaStream = null;
+    this.audioContext = null;
+    this.analyser = null;
     this.isListening = false;
   }
 
@@ -180,3 +195,4 @@ class ClapDetector {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ClapDetector };
 }
+

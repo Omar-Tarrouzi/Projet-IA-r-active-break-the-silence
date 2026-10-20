@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {Onboarding}=require('../systems/Onboarding.js');
 const {HandInput}=require('../systems/HandInput.js');
+const {ClapDetector}=require('../systems/ClapDetector.js');
 
 function node(){
   return {hidden:false,disabled:false,textContent:'',style:{},dataset:{},attributes:{},classList:{toggle(){}},setAttribute(key,value){this.attributes[key]=value;},addEventListener(){},focus(){},querySelector(){return node();},getBoundingClientRect(){return {left:80,top:60,width:300,height:180};}};
@@ -12,7 +13,9 @@ test('player chooses one of three modes before starting and tutorial advances sa
   global.window={innerWidth:1200,addEventListener(){}};
   global.innerWidth=1200;global.innerHeight=900;global.requestAnimationFrame=fn=>fn();
   const onboarding=new Onboarding();
+  const modes=[];onboarding.onModeChange=mode=>modes.push(mode);
   onboarding.select('voice');
+  assert.deepEqual(modes,['voice']);
   assert.equal(onboarding.mode,'voice');
   assert.equal(onboarding.play.disabled,false);
   assert.equal(buttons[1].attributes['aria-pressed'],'true');
@@ -22,9 +25,25 @@ test('player chooses one of three modes before starting and tutorial advances sa
   assert.match(nodes.get('tutorial-title').textContent,/MOVE/);
   onboarding.next();
   assert.match(nodes.get('tutorial-title').textContent,/CLAP/);
-  onboarding.next();onboarding.next();
+  onboarding.next();
+  assert.match(nodes.get('tutorial-title').textContent,/HOLD/);
+  onboarding.next();
+  assert.match(nodes.get('tutorial-title').textContent,/LOW/);
+  onboarding.next();
   assert.equal(onboarding.active,false);
   assert.equal(onboarding.seen,true);
+});
+test('a modest sharp sound clears the new default gate and triggers MID once',()=>{
+  const detector=new ClapDetector({threshold:.04});
+  let amplitude=.008,claps=0;
+  detector.isListening=true;
+  detector.dataArray=new Float32Array(512);
+  detector.analyser={getFloatTimeDomainData:arr=>arr.fill(amplitude)};
+  detector.onClapCallback=()=>claps++;
+  for(let i=0;i<20;i++)detector.update(.016);
+  amplitude=.06;detector.update(.08);
+  amplitude=.008;detector.update(.016);
+  assert.equal(claps,1);
 });
 test('tracked palm is mirrored into a target and pinch release fires only once',()=>{
   const input=new HandInput();
@@ -48,3 +67,4 @@ test('tracked palm is mirrored into a target and pinch release fires only once',
   assert.equal(input.pinch,false);
   assert.equal(input.takeRelease(),false);
 });
+

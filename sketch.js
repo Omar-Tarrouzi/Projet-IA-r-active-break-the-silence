@@ -120,7 +120,9 @@ function setup() {
   // Microphone noise/clap detector
   // - Short Clap => MID Attack (Amber Cone Blast)
   // - Long Sharp Noise => HIGH Attack (Magenta Piercing Laser Beam)
-  clapDetector = new ClapDetector({ threshold: 0.18, onsetDelta: 0.08, sustainedMinTime: 0.35 });
+  const sensitivity=document.getElementById('sensitivity');
+  const microphoneThreshold=()=>Math.max(0.018,0.14-Number(sensitivity.value)*0.0125);
+  clapDetector = new ClapDetector({ threshold: microphoneThreshold(), onsetDelta: 0.08, sustainedMinTime: 0.35 });
 
   // 1. Short Clap => MID Attack
   clapDetector.onClapCallback = (clapPower) => {
@@ -149,6 +151,19 @@ function setup() {
   };
 
   guitar = new Guitar(shaft.x + shaft.width * 0.5, shaft.y + shaft.height * 0.78);
+  onboarding.onModeChange=mode=>{
+    if(mode!=='voice')clapDetector.stop();
+    if(mode!=='hand')handInput.stop();
+    if(mode==='voice')clapDetector.start().then(()=>{
+      if(onboarding.mode!==mode)return;
+      onboarding.setStatus(clapDetector.isListening?'Microphone ready · clap for MID, sustain for HIGH.':'Microphone unavailable · mouse attacks still work.');
+    });
+    if(mode==='hand')handInput.start().then(()=>{
+      if(onboarding.mode!==mode)return;
+      onboarding.setStatus(handInput.ready?'Camera ready · move your palm, pinch to charge.':'Camera unavailable · mouse controls remain available.');
+      if(onboarding.active)onboarding.render();
+    });
+  };
   backgroundLayer=createGraphics(800,900); buildBackdrop(backgroundLayer);
   resetSpace();
   randomSeed(7391);
@@ -179,7 +194,7 @@ function setup() {
   document.getElementById('reduce-motion').checked=reduceMotion;
   document.getElementById('reduce-motion').onchange=e=>{reduceMotion=e.target.checked;document.body.classList.toggle("reduced",reduceMotion);};
   document.body.classList.toggle("reduced",reduceMotion);
-  document.getElementById('sensitivity').oninput=e=>clapDetector.threshold=0.33-Number(e.target.value)*0.03;
+  sensitivity.oninput=()=>clapDetector.threshold=microphoneThreshold();
   queueDeferredRulers();
   teacherMode=params.has('teacher');
   if(params.has('demo'))startDemo(params.get('demo'));
@@ -768,3 +783,8 @@ function updateParticles(dt) {
     if(hitParticles[i].isDead)hitParticles.splice(i,1);
   }
 }
+
+
+
+
+

@@ -85,8 +85,8 @@ class Hud {
     this.nodes['mobile-bar'].hidden=!live;
     if(live&&guide){this.text('guide-kicker',guide.kicker);this.text('guide-action',guide.action);
       this.text('guide-detail',guide.detail);this.bar('guide-meter',guide.progress||0);}
-    this.bar('mic-fill',Math.min(1,(mic?.currentLevel||0)*3));
-    this.nodes['mic-threshold'].style.transform='translateX('+Math.min(100,(mic?.threshold||.18)*300)+'px)';
+    this.bar('mic-fill',Math.min(1,(mic?.currentLevel||0)*10));
+    this.nodes['mic-threshold'].style.left=Math.min(100,(mic?.threshold||.04)*1000)+'%';
     this.text('mic-status',mic?.permissionDenied?'Microphone unavailable · mouse controls ready':mic?.isListening?'LISTENING · '+Math.round(mic.currentLevel*100)+'%':'Optional · clap to blast, sing to charge');
     const handStatus=onboarding?.mode==='hand'&&!demo&&!openingScene?(handInput?.error?'CAMERA OFF · MOUSE READY':handInput?.loading?'CAMERA / LOADING':handInput?.ready?(handInput.target?'HAND / TRACKING':'HAND / SHOW PALM'):'CAMERA / READY'):null;
     this.text('session-status',openingScene?'ORIGIN / THE ROOM':director.bossActive?'BOSS ENCOUNTER':isPaused?'SESSION PAUSED':handStatus||'LIVE / '+Math.floor(score.altitude)+' M');
@@ -105,3 +105,4 @@ class Hud {
   }
 }
 if(typeof module!=='undefined')module.exports={Hud};
+

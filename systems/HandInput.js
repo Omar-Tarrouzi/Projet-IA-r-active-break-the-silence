@@ -4,22 +4,27 @@ class HandInput {
     this.target=null;this.pinch=false;this.released=false;
     this.lastFrame=-1;this.lastScan=0;this.lostAt=0;
     this.video=null;this.stream=null;this.landmarker=null;
+    this.requestId=0;
   }
   async start(){
     if(this.ready||this.loading)return;
     this.loading=true;this.error='';
+    const requestId=++this.requestId;
     try {
       if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera unavailable in this browser');
-      // Permission is requested from the player's click; model code is fetched afterward.
+      // Pin an actually published browser package; 0.10.22 returns 404.
+      const source='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
+      const {FilesetResolver,HandLandmarker}=await import(source+'/vision_bundle.mjs');
+      const files=await FilesetResolver.forVisionTasks(source+'/wasm');
+      this.landmarker=await HandLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'},runningMode:'VIDEO',numHands:1,minTrackingConfidence:.55});
+      if(requestId!==this.requestId){this.landmarker.close();this.landmarker=null;return;}
       this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+      if(requestId!==this.requestId){this.stream.getTracks().forEach(track=>track.stop());this.stream=null;return;}
       this.video=document.createElement('video');
       Object.assign(this.video,{autoplay:true,muted:true,playsInline:true});
       this.video.srcObject=this.stream;
       await this.video.play();
-      const source='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22';
-      const {FilesetResolver,HandLandmarker}=await import(source+'/vision_bundle.mjs');
-      const files=await FilesetResolver.forVisionTasks(source+'/wasm');
-      this.landmarker=await HandLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'},runningMode:'VIDEO',numHands:1,minTrackingConfidence:.55});
+      if(requestId!==this.requestId)return;
       this.ready=true;
     }catch(error){
       this.error=error?.name==='NotAllowedError'?'Camera permission denied':(error?.message||'Hand tracking unavailable');
@@ -52,6 +57,7 @@ class HandInput {
   }
   takeRelease(){const result=this.released;this.released=false;return result;}
   stop(){
+    this.requestId++;
     this.ready=false;this.pinch=false;this.released=false;this.target=null;
     this.landmarker?.close?.();this.landmarker=null;
     this.stream?.getTracks().forEach(track=>track.stop());this.stream=null;
@@ -59,3 +65,4 @@ class HandInput {
   }
 }
 if(typeof module!=='undefined')module.exports={HandInput};
+

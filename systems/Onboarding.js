@@ -18,6 +18,7 @@ class Onboarding {
     window.addEventListener('resize',()=>{if(this.active)this.render();});
   }
   select(mode) {
+    const previous=this.mode;
     this.mode=mode;
     document.querySelectorAll('[data-control]').forEach(button=>{
       const selected=button.dataset.control===mode;
@@ -26,12 +27,13 @@ class Onboarding {
     });
     const notes={
       pointer:'Mouse or touch moves the guitar. Hold, then release to fire.',
-      voice:'Move with mouse or touch. Claps and sustained sound fire attacks. Microphone permission appears when you begin.',
-      hand:'Move your hand to steer; pinch and release to fire. Camera permission appears when you begin.'
+      voice:'Microphone starting… allow access, then clap for a cone or hold a note for a beam.',
+      hand:'Camera starting… allow access, then steer with your palm and pinch to fire.'
     };
     this.note.textContent=notes[mode];
     this.play.disabled=false;
     this.play.textContent='BEGIN ASCENT ↗';
+    if(previous!==mode||mode==='voice'||mode==='hand')this.onModeChange?.(mode);
   }
   setStatus(message){this.note.textContent=message;}
   steps() {
@@ -44,9 +46,10 @@ class Onboarding {
         ['MATCH THE COLOUR','Choose LOW, MID or HIGH with 1 / 2 / 3, then match the enemy colour. Space or DASH gives you an escape burst.',tuning]
       ],
       voice:[
-        ['MOVE THE GUITAR','Aim with mouse or touch. Your microphone controls attacks, not movement.', '@guitar'],
-        ['CLAP TO STRIKE','A short, sharp clap fires the MID cone. Check the microphone meter if it does not react.',mobile?'#mobile-mic':'.mic-meter'],
-        ['HOLD A NOTE','Sing or make a sustained sound to charge a HIGH beam; stop to release it. Use 1 / 2 / 3 to switch manually.',tuning]
+        ['MOVE & LISTEN','Aim with mouse or touch. The microphone fires your attacks; allow access when asked. The meter responds to your voice.', '@guitar'],
+        ['CLAP TO STRIKE','Make one short clap or sharp sound, then stop. On release it fires an amber MID cone that cleaves nearby shapes.',mobile?'#mobile-mic':'.mic-meter'],
+        ['HOLD A NOTE','Sing or hold a steady sound for half a second, then go quiet. That charges and releases a magenta HIGH beam. The sensitivity slider helps with softer voices.',tuning],
+        ['LOW & BACKUP','Choose LOW with 1 for a circular blast; hold and release mouse or touch to fire it. Use 2 / 3 for manual MID / HIGH and SPACE to dash.',tuning]
       ],
       hand:[
         ['SHOW YOUR HAND','Hold one hand inside the camera frame. Its position becomes the guitar target. Mouse remains available as backup.', '@guitar'],
@@ -84,3 +87,4 @@ class Onboarding {
   close(){if(!this.active)return;this.active=false;this.seen=true;this.tutorial.hidden=true;document.getElementById('canvas-container').focus?.();}
 }
 if(typeof module!=='undefined')module.exports={Onboarding};
+
